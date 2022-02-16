@@ -49,6 +49,7 @@
 --   (안정성과 성능 향상)
 
 
+
 --■■■ 오라클 제거 ■■■--
 
 -- 1. 제어판 > 앱(프로그램 및 기능) → Oracle Database 11g Express Edition 제거
