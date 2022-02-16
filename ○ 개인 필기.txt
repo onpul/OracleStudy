@@ -35,8 +35,8 @@
 //                           패스워드/로써/권한(롤) -> 권한들의 묶음
 //                                         어떤 보안카드인지
 
-//C:\>sqlplus
-//sql>connect
+//C:\>sqlplus sys/java006$ as sysdba
+//sql>connect sys/java006$ as sysdba
 // 명령프롬프트 상태에서는 sqlplus를 쓰는 거고
 // sql프롬프트 상태에서는 connect를 사용하는 것
 
