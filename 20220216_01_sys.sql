@@ -28,11 +28,11 @@ FROM DUAL;  -- 의미 없음.
 -- 대소문자 구분 안 함.
 
 select 1 + 2
-from dual
+from dual;
 --==>> 3
 
 SELECT 1 + 2
-FROM DUAL
+FROM DUAL;
 --==>> 3
 
 SELECT                     2+   4
