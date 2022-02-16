@@ -71,5 +71,5 @@ SQL> connect sys/java006$ as sysdba
 --○ 다시 접속된 사용자 확인
 SQL> show user
 --==>> USER is "SYS"
-
+ㅇ
 
