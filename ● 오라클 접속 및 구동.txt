@@ -35,3 +35,41 @@ SQL> show user
 --==>> USER is ""
 --> 현재 접속한 사용자 계정을 조회하는 구문
 
+--○ 첫 번째 관리자 계정인 『sys』로 연결해본다.
+C:\Users\mj070>sqlplus sys/java006$ as sysdba
+--==>>
+/*
+SQL*Plus: Release 11.2.0.2.0 Production on 수 2월 16 09:18:10 2022
+
+Copyright (c) 1982, 2014, Oracle.  All rights reserved.
+
+
+Connected to:
+Oracle Database 11g Express Edition Release 11.2.0.2.0 - 64bit Production
+*/
+
+--○ 접속한 사용자 조회
+SQL> show user
+--==>> USER is "SYS"
+
+--○ 접속 종료
+SQL> disconnect
+--==>> Disconnected from Oracle Database 11g Express Edition Release 11.2.0.2.0 - 64bit Production
+
+--○ 다시 『sys』로 접속했던 구문 사용
+SQL> sqlplus sys/java006$ as sysdba
+--==>> SP2-0734: unknown command beginning "sqlplus sy..." - rest of line ignored.
+
+--○ 접속된 사용자 확인
+SQL> show user
+USER is ""
+
+--○ 다시 『sys』로 접속
+SQL> connect sys/java006$ as sysdba
+--==>> Connected.
+
+--○ 다시 접속된 사용자 확인
+SQL> show user
+--==>> USER is "SYS"
+
+
