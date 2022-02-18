@@ -559,4 +559,4 @@ SELECT ENAME "사원명", NVL(COMM, 1234) "수당"
 FROM TBL_EMP;
 
 SELECT EMPNO "사원번호", ENAME "사원명", SAL "급여", COMM "커미션", NVL(COMM, 0) "연봉"
-FROM TBL_EMP;
+FROM TBL_EMP; 

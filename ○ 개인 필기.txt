@@ -136,5 +136,5 @@ FROM / WHERE / GROUP BY / HAVING / SELECT / ORDER BY
 -- 우리가 다루는 건 바디쪽.
 -- 이름, 유형, 크기, 만든 날짜 등의 내용은 헤더로 ...
 -- 포렌식 -> 헤더가 중요
-
+ 
 SYSDATE -> 얘도 함수임
