@@ -766,6 +766,306 @@ FROM TBL_EMP;
 --     문정이의 현재 연봉은 10인데 희망 연봉은 20이다.』
 --   단, 레코드마다 위의 내용이 한 컬럼에 모두 조회될 수 있도록 처리한다.
 
-SELECT ENAME || '의 현재 연봉은 ' || COALESCE(SAL*12+COMM, SAL*12, COMM, 0) || 
-    '인데 희망 연봉은 ' || COALESCE(SAL*12+COMM, SAL*12, COMM, 0)*20 || '이다.'
+SELECT ENAME || '의 현재 연봉은 ' 
+    || COALESCE(SAL*12+COMM, SAL*12, COMM, 0) 
+    || '인데 희망 연봉은 ' 
+    || COALESCE(SAL*12+COMM, SAL*12, COMM, 0)*2 
+    || '이다.'
 FROM TBL_EMP;
+--==>>
+/*
+SMITH의 현재 연봉은 9600인데 희망 연봉은 19200이다.
+ALLEN의 현재 연봉은 19500인데 희망 연봉은 39000이다.
+WARD의 현재 연봉은 15500인데 희망 연봉은 31000이다.
+JONES의 현재 연봉은 35700인데 희망 연봉은 71400이다.
+MARTIN의 현재 연봉은 16400인데 희망 연봉은 32800이다.
+BLAKE의 현재 연봉은 34200인데 희망 연봉은 68400이다.
+CLARK의 현재 연봉은 29400인데 희망 연봉은 58800이다.
+SCOTT의 현재 연봉은 36000인데 희망 연봉은 72000이다.
+KING의 현재 연봉은 60000인데 희망 연봉은 120000이다.
+TURNER의 현재 연봉은 18000인데 희망 연봉은 36000이다.
+ADAMS의 현재 연봉은 13200인데 희망 연봉은 26400이다.
+JAMES의 현재 연봉은 11400인데 희망 연봉은 22800이다.
+FORD의 현재 연봉은 36000인데 희망 연봉은 72000이다.
+MILLER의 현재 연봉은 15600인데 희망 연봉은 31200이다.
+호석이의 현재 연봉은 0인데 희망 연봉은 0이다.
+문정이의 현재 연봉은 10인데 희망 연봉은 20이다.
+*/
+
+SELECT *
+FROM TBL_EMP;
+
+ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS';
+--==>>Session이(가) 변경되었습니다.
+
+SELECT SYSDATE
+FROM DUAL;
+--==>> 2022-02-18 15:36:11
+
+ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD';
+--==>>Session이(가) 변경되었습니다.
+
+SELECT SYSDATE
+FROM DUAL;
+
+--○ TBL_EMP 테이블의 데이터를 활용하여
+--   다음과 같은 결과를 얻을 수 있도록 쿼리문을 구성한다.
+--   『SMITH's 입사일은 1980-12-17이다. 그리고 급여는 800이다.
+--     ALLEN's 입사일은 1981-02-20이다. 그리고 급여는 1600이다.
+--                            :
+--     문정's 입사일은 2022-02-18이다. 그리고 급여는 10이다. 』
+--   단, 레코드마다 위의 내용이 한 컬럼에 모두 조회될 수 있도록 처리한다.
+
+SELECT ENAME || '''s 입사일은 ' || HIREDATE || '이다. 그리고 급여는 ' || NVL(SAL, 0) || '이다.'
+FROM TBL_EMP;
+--==>>
+/*
+SMITH's 입사일은 1980-12-17이다. 그리고 급여는 800이다.
+ALLEN's 입사일은 1981-02-20이다. 그리고 급여는 1600이다.
+WARD's 입사일은 1981-02-22이다. 그리고 급여는 1250이다.
+JONES's 입사일은 1981-04-02이다. 그리고 급여는 2975이다.
+MARTIN's 입사일은 1981-09-28이다. 그리고 급여는 1250이다.
+BLAKE's 입사일은 1981-05-01이다. 그리고 급여는 2850이다.
+CLARK's 입사일은 1981-06-09이다. 그리고 급여는 2450이다.
+SCOTT's 입사일은 1987-07-13이다. 그리고 급여는 3000이다.
+KING's 입사일은 1981-11-17이다. 그리고 급여는 5000이다.
+TURNER's 입사일은 1981-09-08이다. 그리고 급여는 1500이다.
+ADAMS's 입사일은 1987-07-13이다. 그리고 급여는 1100이다.
+JAMES's 입사일은 1981-12-03이다. 그리고 급여는 950이다.
+FORD's 입사일은 1981-12-03이다. 그리고 급여는 3000이다.
+MILLER's 입사일은 1982-01-23이다. 그리고 급여는 1300이다.
+호석이's 입사일은 2022-02-18이다. 그리고 급여는 0이다.
+문정이's 입사일은 2022-02-18이다. 그리고 급여는 0이다.
+*/
+
+--※ 문자열을 나타내는 홑따옴표 사이에서(시작과 끝)
+--   홑따옴표 두 개가 홑따옴표 하나(어퍼스트로피)를 의미한다.
+--   홑따옴표 『'』 하나는 문자열의 영역이 시작된다는 것을 나타내고
+--   이 문자열 영역 안에서 홑따옴표 『''』 두 개는 어퍼스트로피를 나타내며
+--   다시 등장하는 홑따옴표 『'』 하나가
+--   문자열 영역의 종료를 의미하게 되는 것이다.
+
+SELECT *
+FROM TBL_EMP
+WHERE JOB = 'SALESMAN';
+
+SELECT *
+FROM TBL_EMP
+WHERE JOB = 'salesman';
+
+
+--○ UPPER(), LOWER(), INITCAP()
+
+SELECT 'oRaCLe' "COL1"
+    , UPPER('oRaCLe') "COL2"     --> 대문자
+    , LOWER('oRaCLe') "COL3"     --> 소문자
+    , INITCAP('oRaCLe') "COL4"   --> 앞글자만 대문자
+FROM DUAL;
+--==>> oRaCLe	ORACLE	oracle	Oracle
+--> UPPER() 는 모두 대문자로 변환
+--  LOWER() 는 모두 소문자로 변환
+--  INITCAP() 은 첫 글자만 대문자로 하고 나머지는 모두 소문자로 변환하여 반환
+
+--○ TBL_EMP 테이블을 대상으로 검색값이 'sALeSmAN' 인 조건으로
+--   해당 직종 사원의 사원번호, 사원명, 직종명을 조회한다.
+SELECT EMPNO "사원번호", ENAME "사원명", JOB "직종명"
+FROM TBL_EMP
+WHERE JOB = 'sALeSmAN';
+--==>> 조회 결과 없음.
+
+SELECT EMPNO "사원번호", ENAME "사원명", JOB "직종명"
+FROM TBL_EMP
+WHERE JOB = UPPER('sALeSmAN');
+--==>>
+/*
+7499	ALLEN	SALESMAN
+7521	WARD	SALESMAN
+7654	MARTIN	SALESMAN
+7844	TURNER	SALESMAN
+8000	호석이	SALESMAN
+8001	문정이	SALESMAN
+*/
+
+--○ 실습을 위한 추가 데이터 입력
+INSERT INTO TBL_EMP(EMPNO, ENAME, JOB, MGR, HIREDATE, DEPTNO, COMM)
+VALUES(8002, '태형이', 'salesman', 7369, SYSDATE, 20, 100);
+--==>> 1 행 이(가) 삽입되었습니다.
+
+SELECT *
+FROM TBL_EMP;
+
+COMMIT;
+--==>> 커밋 완료.
+
+--○ TBL_EMP 테이블에서 직종이 영업사원(세일즈맨)인 사원들의
+--   사원번호, 사원명, 직종명을 조회한다.
+SELECT EMPNO "사원번호", ENAME "사원명", JOB "직종명"
+FROM TBL_EMP
+WHERE UPPER(JOB) = UPPER('sALeSmAN');
+
+SELECT EMPNO "사원번호", ENAME "사원명", JOB "직종명"
+FROM TBL_EMP
+WHERE LOWER(JOB) = LOWER('sALeSmAN');
+
+SELECT EMPNO "사원번호", ENAME "사원명", JOB "직종명"
+FROM TBL_EMP
+WHERE INITCAP(JOB) = INITCAP('sALeSmAN');
+--==>>
+/*
+7499	ALLEN	SALESMAN
+7521	WARD	SALESMAN
+7654	MARTIN	SALESMAN
+7844	TURNER	SALESMAN
+8000	호석이	SALESMAN
+8001	문정이	SALESMAN
+8002	태형이	salesman
+*/
+
+
+--○ TBL_EMP 테이블에서 입사일이 1981년 9월 28일 입사한 직원의
+--   사원명, 직종명, 입사일 항목을 조회한다.
+SELECT *
+FROM TBL_EMP;
+
+SELECT ENAME "사원명", JOB "직종명", HIREDATE "입사일"
+FROM TBL_EMP
+WHERE HIREDATE = '1981-09-28';     --> 사실상 틀린!! 쿼리문
+--    --------    -----------
+--   데이트 타입   문자 타입
+--==>> MARTIN	SALESMAN	1981-09-28
+
+DESC TBL_EMP;
+--==>>
+/*
+이름       널? 유형           
+-------- -- ------------ 
+EMPNO       NUMBER(4)    
+ENAME       VARCHAR2(10) 
+JOB         VARCHAR2(9)  
+MGR         NUMBER(4)    
+HIREDATE    DATE         
+SAL         NUMBER(7,2)  
+COMM        NUMBER(7,2)  
+DEPTNO      NUMBER(2)
+*/
+
+--○ TO_DATE()
+-- 오라클의 날짜 변환 함수
+SELECT ENAME "사원명", JOB "직종명", HIREDATE "입사일"
+FROM TBL_EMP
+WHERE HIREDATE = TO_DATE('1981-09-28', 'YYYY-MM-DD');    -- 매개변수 두 개
+--==>> MARTIN	SALESMAN	1981-09-28
+
+--○ TBL_EMP 테이블에서 입사일이 1981년 9월 28일 이후(해당일 포함)
+--   입사한 직원들의 사원명, 직종명, 입사일 항목을 조회한다.
+SELECT *
+FROM TBL_EMP;
+
+-- 내가 한 거
+SELECT ENAME "사원명", JOB "직종명", HIREDATE "입사일"
+FROM TBL_EMP
+WHERE HIREDATE >= '19810928';
+
+-- 수업 풀이
+SELECT ENAME "사원명", JOB "직종명", HIREDATE "입사일"
+FROM TBL_EMP
+WHERE HIREDATE >= TO_DATE('1981-09-28', 'YYYY-MM-DD');   
+--==>>
+/*
+MARTIN	SALESMAN	1981-09-28
+SCOTT	ANALYST 	1987-07-13
+KING	PRESIDENT	1981-11-17
+ADAMS	CLERK	    1987-07-13
+JAMES	CLERK	    1981-12-03
+FORD	ANALYST	    1981-12-03
+MILLER	CLERK	    1982-01-23
+호석이	SALESMAN	2022-02-18
+문정이	SALESMAN	2022-02-18
+태형이	salesman	2022-02-18
+*/
+
+--※ 오라클에서는 날짜 데이터에 대한 크기 비교가 가능하다.
+--   오라클에서는 날짜 데이터에 대한 크기 비교 시 
+--   과거보다 미래를 더 큰 값으로 간주한다.
+
+--○ TBL_EMP 테이블에서 입사일이 1981년 4월 2일 부터 
+--   1981년 9월 28일 사이에 입사한 직원들의
+--   사원명, 직종명, 입사일 항목을 조회한다.
+SELECT ENAME "사원명", JOB "직종명", HIREDATE "입사일"
+FROM TBL_EMP
+WHERE 1981년 4월 2일 <= 입사일 <= 1981년 9월 28일; -- (X)
+
+SELECT ENAME "사원명", JOB "직종명", HIREDATE "입사일"
+FROM TBL_EMP
+WHERE HIREDATE >= TO_DATE('1981-04-02', 'YYYY-MM-DD')     -- 이후(이상) → 해당일 포함  cf) 초과
+  AND HIREDATE <= TO_DATE('1981-09-28', 'YYYY-MM-DD');    -- 이전(이하) → 해당일 포함  cf) 미만
+--==>
+/*
+JONES	MANAGER	    1981-04-02
+MARTIN	SALESMAN	1981-09-28
+BLAKE	MANAGER	    1981-05-01
+CLARK	MANAGER 	1981-06-09
+TURNER	SALESMAN	1981-09-08
+*/
+
+--○ BETWEEN ⓐ AND ⓑ
+-- 숫자 문자 다 사용 가능
+SELECT ENAME "사원명", JOB "직종명", HIREDATE "입사일"
+FROM TBL_EMP
+WHERE HIREDATE 이 1981년 4월 2일과 1981년 9월 28일 사이;
+
+SELECT ENAME "사원명", JOB "직종명", HIREDATE "입사일"
+FROM TBL_EMP
+WHERE HIREDATE BETWEEN TO_DATE('1981-04-02', 'YYYY-MM-DD')    
+                   AND TO_DATE('1981-09-28', 'YYYY-MM-DD');
+--==>
+/*
+JONES	MANAGER	    1981-04-02
+MARTIN	SALESMAN	1981-09-28
+BLAKE	MANAGER	    1981-05-01
+CLARK	MANAGER 	1981-06-09
+TURNER	SALESMAN	1981-09-08
+*/
+
+--○ TBL_EMP 테이블에서 급여(SAL)가 2450에서 3000 사이의 직원들을 모두 조회한다.
+SELECT *
+FROM TBL_EMP
+WHERE SAL BETWEEN 2450 AND 3000;
+--==>>
+/*
+7566	JONES	MANAGER	7839	1981-04-02	2975		20
+7698	BLAKE	MANAGER	7839	1981-05-01	2850		30
+7782	CLARK	MANAGER	7839	1981-06-09	2450		10
+7788	SCOTT	ANALYST	7566	1987-07-13	3000		20
+7902	FORD	ANALYST	7566	1981-12-03	3000		20
+*/
+
+SELECT *
+FROM TBL_EMP
+WHERE ENAME BETWEEN 'C' AND 'S';    -- 사전식 배열
+--==>>
+/*
+7566	JONES	MANAGER	    7839	1981-04-02	2975		    20
+7654	MARTIN	SALESMAN	7698	1981-09-28	1250	1400	30
+7782	CLARK	MANAGER	    7839	1981-06-09	2450		    10
+7839	KING	PRESIDENT		    1981-11-17	5000		    10
+7900	JAMES	CLERK	    7698	1981-12-03	 950	        30
+7902	FORD	ANALYST 	7566	1981-12-03	3000		    20
+7934	MILLER	CLERK	    7782	1982-01-23	1300		    10
+*/
+
+
+SELECT *
+FROM TBL_EMP
+WHERE ENAME BETWEEN 'C' AND 's';
+
+
+--※ BETWEEN ⓐ AND ⓑ 는 날짜형, 숫자형, 문자형 데이터 모두에 적용된다.
+--   단, 문자형일 경우 아스키코드 순서를 따르기 때문에 (사전식 배열)
+--   대문자가 앞쪽에 위치하고 소문자가 뒤쪽에 위치한다.
+--   또한, BETWEEN ⓐ AND ⓑ는 해당 구문이 수행되는 시점에서
+--   오라클 내부적으로는 부등호 연산자의 형태로 바뀌어 연산 처리된다.
+
+SELECT ASCII('A') "COL1", ASCII('B') "COL2", ASCII('a') "COL3", ASCII('b') "COL4"
+FROM DUAL;
+--==>> 65	66	97	98
