@@ -137,4 +137,8 @@ FROM / WHERE / GROUP BY / HAVING / SELECT / ORDER BY
 -- 이름, 유형, 크기, 만든 날짜 등의 내용은 헤더로 ...
 -- 포렌식 -> 헤더가 중요
  
-SYSDATE -> 얘도 함수임
+●SYSDATE -> 얘도 함수임
+
+●NVL()
+-- 첫 번째 파라미터 값이 NULL 이면, 두 번째 파라미터 값을 반환한다.
+-- 첫 번째 파라미터 값이 NULL 이 아니면, 그 값을 그대로 반환한다.

@@ -558,5 +558,214 @@ FROM TBL_EMP;
 SELECT ENAME "사원명", NVL(COMM, 1234) "수당"
 FROM TBL_EMP;
 
-SELECT EMPNO "사원번호", ENAME "사원명", SAL "급여", COMM "커미션", NVL(COMM, 0) "연봉"
+SELECT EMPNO "사원번호", ENAME "사원명", SAL "급여", COMM "커미션", NVL(SAL * 12 + COMM, SAL * 12) "연봉"
 FROM TBL_EMP; 
+--==>>
+/*
+7369	SMITH	 800   (null)    9600
+7499	ALLEN	1600	 300	19500
+7521	WARD	1250	 500    15500
+7566	JONES	2975   (null)   35700
+7654	MARTIN	1250	1400	16400
+7698	BLAKE	2850   (null)   34200
+7782	CLARK	2450   (null)   29400
+7788	SCOTT	3000   (null)   36000
+7839	KING	5000   (null)   60000
+7844	TURNER	1500	   0	18000
+7876	ADAMS	1100   (null)	13200
+7900	JAMES	 950   (null)   11400
+7902	FORD	3000   (null)   36000
+7934	MILLER	1300   (null)   15600
+*/
+
+SELECT EMPNO "사원번호", ENAME "사원명", SAL "급여", COMM "커미션", SAL * 12 + NVL(COMM,0) "연봉"
+FROM TBL_EMP; 
+--==>>
+/*
+7369	SMITH	 800   (null)    9600
+7499	ALLEN	1600	 300	19500
+7521	WARD	1250	 500    15500
+7566	JONES	2975   (null)   35700
+7654	MARTIN	1250	1400	16400
+7698	BLAKE	2850   (null)   34200
+7782	CLARK	2450   (null)   29400
+7788	SCOTT	3000   (null)   36000
+7839	KING	5000   (null)   60000
+7844	TURNER	1500	   0	18000
+7876	ADAMS	1100   (null)	13200
+7900	JAMES	 950   (null)   11400
+7902	FORD	3000   (null)   36000
+7934	MILLER	1300   (null)   15600
+*/
+
+--○ NVL2()
+--> 첫 번째 파라미터 값이 NULL이 아닌 경우, 두 번째 파라미터 값을 반환하고
+--  첫 번째 파라미터 값이 NULL인 경우, 세 번째 파라미터 값을 반환한다.
+
+SELECT ENAME "사원명", NVL2(COMM, '청기올려', '백기올려')  "수당 확인"
+FROM TBL_EMP;
+--==>>
+/*
+SMITH	백기올려
+ALLEN	청기올려
+WARD	청기올려
+JONES	백기올려
+MARTIN	청기올려
+BLAKE	백기올려
+CLARK	백기올려
+SCOTT	백기올려
+KING	백기올려
+TURNER	청기올려
+ADAMS	백기올려
+JAMES	백기올려
+FORD	백기올려
+MILLER	백기올려
+*/
+
+SELECT EMPNO "사원번호", ENAME "사원명", SAL "급여", COMM "커미션"
+    , SAL * 12 + NVL2(COMM, COMM, 0) "연봉"
+FROM TBL_EMP;
+
+SELECT EMPNO "사원번호", ENAME "사원명", SAL "급여", COMM "커미션"
+    , NVL2(COMM, SAL*12+COMM, SAL*12) "연봉"
+FROM TBL_EMP;
+
+--○ COALESCE()
+--> 매개변수 제한이 없는 형태로 인지하고 활용한다.
+--  맨 앞에 있는 매개변수부터 차례로 NULL 인지 아닌지 확인하여
+--  NULL 이 아닐 경우 반환하고, 
+--  NULL인 경우에는 그 다음 매개변수 값을 반환한다.
+--  NVL() 이나 NVL2() 와 비교하여
+--  모 ~~~ 든 경우의 수를 고려할 수 있다는 특징을 갖는다.
+
+SELECT NULL "COL1"
+    , COALESCE(NULL, NULL, NULL, 30) "COL2"
+    , COALESCE(NULL, NULL, NULL, NULL, NULL, NULL, 100) "COL3"
+    , COALESCE(10, NULL, NULL, NULL, NULL, NULL) "COL4"
+    , COALESCE(NULL, NULL, NULL, 50, NULL, NULL) "COL5"
+FROM DUAL;
+--==>> (null) 	30	100	10	50
+
+--○ 실습을 위한 데이터 추가 입력
+INSERT INTO TBL_EMP(EMPNO, ENAME, JOB, MGR, HIREDATE, DEPTNO)
+VALUES(8000, '호석이', 'SALESMAN', 7369, SYSDATE, 10);
+--==>> 1 행 이(가) 삽입되었습니다.
+
+INSERT INTO TBL_EMP(EMPNO, ENAME, JOB, MGR, HIREDATE, DEPTNO, COMM)
+VALUES(8001, '문정이', 'SALESMAN', 7369, SYSDATE, 10, 10);
+--==>> 1 행 이(가) 삽입되었습니다.
+
+SELECT *
+FROM TBL_EMP;
+
+COMMIT;
+--==>> 커밋 완료.
+
+
+--○ 데이터가 추가된 형재 상태의 TBL_EMP 테이블에서 모든 사원의
+--   사원번호, 사원명, 급여, 커미션, 연봉 항목을 조회한다.
+--   연봉 산출 기준은 위와 같다.
+SELECT *
+FROM TBL_EMP;
+
+SELECT EMPNO "사원번호", ENAME "사원명", SAL "급여", COMM "커미션"
+    , COALESCE(SAL*12+COMM, SAL*12, COMM, 0) "연봉"
+FROM TBL_EMP;
+--==>>
+/*
+7369	SMITH	 800		     9600
+7499	ALLEN	1600	 300    19500
+7521	WARD	1250	 500	15500
+7566	JONES	2975		    35700
+7654	MARTIN	1250	1400	16400
+7698	BLAKE	2850		    34200
+7782	CLARK	2450		    29400
+7788	SCOTT	3000		    36000
+7839	KING	5000		    60000
+7844	TURNER	1500	   0    18000
+7876	ADAMS	1100		    13200
+7900	JAMES	 950		    11400
+7902	FORD	3000	    	36000
+7934	MILLER	1300		    15600
+8000	호석이			            0
+8001	문정이		      10	   10
+*/
+
+
+--○ 컬럼과 컬럼의 연결(결합)
+SELECT 1, 2
+FROM DUAL;
+--==>> 1  2
+
+SELECT 1 + 2
+FROM DUAL;
+--==>> 3
+
+SELECT '민지', '정용이'
+FROM DUAL;
+--==>> 민지	정용이
+
+SELECT '민지' + '정용이'
+FROM DUAL;
+--==>> 에러 발생
+--     (ORA-01722: invalid number)
+
+--『||』 파이프?
+SELECT '민지' || '정용이'
+FROM DUAL;
+--==>> 민지정용이
+
+SELECT ENAME, JOB
+FROM TBL_EMP;
+
+SELECT ENAME || JOB
+FROM TBL_EMP;
+--==>>
+/*
+SMITHCLERK
+ALLENSALESMAN
+WARDSALESMAN
+JONESMANAGER
+MARTINSALESMAN
+BLAKEMANAGER
+CLARKMANAGER
+SCOTTANALYST
+KINGPRESIDENT
+TURNERSALESMAN
+ADAMSCLERK
+JAMESCLERK
+FORDANALYST
+MILLERCLERK
+호석이SALESMAN
+문정이SALESMAN
+*/
+
+SELECT '수정이는 ', SYSDATE, '에 연봉 ', 500, '억을 원한다.'
+FROM DUAL;
+--==>> 수정이는	 2022-02-18	에 연봉 	500	억을 원한다.
+--     --------  ---------- -------     --- -----------
+--     문자타입   날짜타입  문자타입   숫자타입 문자타입
+
+SELECT '수정이는 ' || SYSDATE || '에 연봉 ' || 500 || '억을 원한다.'
+FROM DUAL;
+--==>> 수정이는 2022-02-18에 연봉 500억을 원한다.
+
+--※ 오라클에서는 문자 타입의 형태로 형 변환하는 별도의 과정 없이
+--   『||』만 삽입해주면 간단히 컬럼과 컬럼(서로 다른 종류의 데이터)을
+--   결합하는 것이 가능하다.
+--   cf) MSSQL 에서는 모든 데이터를 문자열로 CONVERT 해야 한다.
+
+SELECT *
+FROM TBL_EMP;
+
+--○ TBL_EMP 테이블의 데이터를 활용하여
+--   다음과 같은 결과를 얻을 수 있도록 쿼리문을 구성한다.
+--   『SMITH의 현재 연봉은 9600인데 희망 연봉은 19200이다.
+--     ALLEN의 현재 연봉은 19500인데 희망 연봉은 39000이다.
+--                            :
+--     문정이의 현재 연봉은 10인데 희망 연봉은 20이다.』
+--   단, 레코드마다 위의 내용이 한 컬럼에 모두 조회될 수 있도록 처리한다.
+
+SELECT ENAME || '의 현재 연봉은 ' || COALESCE(SAL*12+COMM, SAL*12, COMM, 0) || 
+    '인데 희망 연봉은 ' || COALESCE(SAL*12+COMM, SAL*12, COMM, 0)*20 || '이다.'
+FROM TBL_EMP;
