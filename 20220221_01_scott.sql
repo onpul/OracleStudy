@@ -411,12 +411,230 @@ COMMIT;
 --   데이터를 조회한다.
 SELECT *
 FROM TBL_WATCH
-WHERE BIGO LIKE '%99.99%';
+WHERE BIGO LIKE '99.99%';
+--==>> 조회 결과 없음
+
+SELECT *
+FROM TBL_WATCH
+WHERE BIGO LIKE '%99.99%%';
 --==>>
+/*
+금시계	순금 99.99% 함유된 최고급 시계
+은시계	고객 만족도 99.99점을 획득한 멋진 시계
+*/
+
+SELECT *
+FROM TBL_WATCH
+WHERE BIGO LIKE '%99.99%%%';
+--==>>
+/*
+금시계	순금 99.99% 함유된 최고급 시계
+은시계	고객 만족도 99.99점을 획득한 멋진 시계
+*/
+
+-------↓ESCAPE 문법
+
+SELECT *
+FROM TBL_WATCH
+WHERE BIGO LIKE '%99.99\%%' ESCAPE '\';
+--==>> 금시계	순금 99.99% 함유된 최고급 시계
+
+SELECT *
+FROM TBL_WATCH
+WHERE BIGO LIKE '%99.99$%%' ESCAPE '$';
+--==>> 금시계	순금 99.99% 함유된 최고급 시계
+
+SELECT *
+FROM TBL_WATCH
+WHERE BIGO LIKE '%99.99@%%' ESCAPE '@';
+--==>> 금시계	순금 99.99% 함유된 최고급 시계
+
+--※ ESCAPE로 정한 문자의 다음 한 글자를 와일드카드에서 탈출시켜라...
+--   일반적으로 사용 빈도가 낮은 특수문자(특수기호)를 사용한다.
+
+--------------------------------------------------------------------------------
+
+--■■■ COMMIT / ROLLBACK ■■■--
+
+SELECT *
+FROM TBL_DEPT;
+--==>>
+/*
+10	ACCOUNTING	NEW YORK
+20	RESEARCH	DALLAS
+30	SALES	    CHICAGO
+40	OPERATIONS	BOSTON
+*/
+
+--○ 데이터 입력
+INSERT INTO TBL_DEPT VALUES(50, '개발부', '서울');
+--==>> 1 행 이(가) 삽입되었습니다.
+
+--○ 확인
+SELECT *
+FROM TBL_DEPT;
+--==>>
+/*
+10	ACCOUNTING	NEW YORK
+20	RESEARCH	DALLAS
+30	SALES   	CHICAGO
+40	OPERATIONS	BOSTON
+50	개발부     	서울
+*/
+
+-- 50번 개발부 서울...
+-- 이 데이터는 TBL_DEPT 테이블이 저장되어 있는
+-- 하드디스크상에 물리적으로 적용되어 저장된 것이 아니다.
+-- 메모리(RAM)상에 입력된 것이다.
+
+--○ 롤백
+ROLLBACK; --CTRL+Z 처럼... 메모리에 있던 것을 모두 비워버림
+--==>> 롤백 완료.
+
+--○ 다시 확인
+SELECT *
+FROM TBL_DEPT;
+--==>>
+/*
+10	ACCOUNTING	NEW YORK
+20	RESEARCH	DALLAS
+30	SALES	    CHICAGO
+40	OPERATIONS	BOSTON
+*/
+--> 50번 개발부 서울... 에 대한 데이터가 소실되었음을 확인(존재하지 않음)
+
+--○ 다시 데이터 입력
+INSERT INTO TBL_DEPT VALUES(50, '개발부', '서울');
+--==>> 1 행 이(가) 삽입되었습니다.
+
+-- 50번 개발부 서울...
+-- 이 데이터는 TBL_DEPT 테이블이 저장되어 있는 하드디스크상에 저장된 것이 아니라
+-- 메모리(RAM) 상에 입력된 것이다.
+-- 이를 실제 하드디스크상에 물리적으로 저장하기 위해서는
+-- COMMIT을 수행해야 한다.
+
+--○ 확인
+SELECT *
+FROM TBL_DEPT;
+--==>>
+/*
+10	ACCOUNTING	NEW YORK
+20	RESEARCH	DALLAS
+30	SALES	    CHICAGO
+40	OPERATIONS	BOSTON
+50	개발부	    서울
+*/
+
+--○ 커밋
+COMMIT;
+--==>> 커밋 완료.
+
+--○ 커밋 이후 다시 확인
+SELECT *
+FROM TBL_DEPT;
+--==>>
+/*
+10	ACCOUNTING	NEW YORK
+20	RESEARCH	DALLAS
+30	SALES	    CHICAGO
+40	OPERATIONS	BOSTON
+50	개발부	    서울
+*/
+
+--○ 커밋을 수행한 이후 롤백
+ROLLBACK;
+--==>> 롤백 완료.
+
+--○ 롤백 이후 다시 확인
+SELECT *
+FROM TBL_DEPT;
+--==>>
+/*
+10	ACCOUNTING	NEW YORK
+20	RESEARCH	DALLAS
+30	SALES	    CHICAGO
+40	OPERATIONS	BOSTON
+50	개발부	    서울
+*/
+--> 롤백(ROLLBACK)을 수행했음에도 불구하고
+--  50번 개발부 서울... 의 행 데이터는 소실되지 않았음을 확인
+
+--※ COMMIT 을 실행한 이후로 DML 구문(INSERT, UPDATE, DELETE)을 통해
+--   변경된 데이터를 취소할 수 있는 것일 뿐...
+--   DML 구문을 사용한 후 COMMIT 을 하고 나서 ROLLBACK을 실행해 봐야
+--   아무런 소용이 없다.
 
 
+--○ 데이터 수정(UPDATE → TBL_DEPT)
+UPDATE TBL_DEPT
+SET DNAME='연구부', LOC='경기'
+WHERE DEPTNO = 50; -- 얘부터 쓰기
+--==>> 1 행 이(가) 업데이트되었습니다.
 
+--○ 확인
+SELECT *
+FROM TBL_DEPT;
+--==>>
+/*
+10	ACCOUNTING	NEW YORK
+20	RESEARCH	DALLAS
+30	SALES	    CHICAGO
+40	OPERATIONS 	BOSTON
+50	연구부	    경기
+*/
 
+--○ 롤백
+ROLLBACK;
+--==>> 롤백 완료.
 
+--○ 롤백 수행 후 다시 확인
+SELECT *
+FROM TBL_DEPT;
+--==>>
+/*
+10	ACCOUNTING	NEW YORK
+20	RESEARCH	DALLAS
+30	SALES	CHICAGO
+40	OPERATIONS	BOSTON
+50	개발부	서울
+*/
 
+--○ 데이터 삭제(DELETE → TBL_DEPT)
+DELETE TBL_DEPT
+WHERE DEPTNO=50;  -- 이렇게 말고
 
+SELECT * -- 먼저 삭제할 데이터 조회 후, 조회 내용 확인 한 후 딜리트로 바꾸기
+FROM TBL_DEPT 
+WHERE DEPTNO=50;
+
+DELETE  -- 이렇게 하자!
+FROM TBL_DEPT  -- FROM 절 웬만하면 넣자!
+WHERE DEPTNO=50;
+--==>> 1 행 이(가) 삭제되었습니다.
+
+--○ 확인
+SELECT *
+FROM TBL_DEPT;
+--==>>
+/*
+10	ACCOUNTING	NEW YORK
+20	RESEARCH	DALLAS
+30	SALES	    CHICAGO
+40	OPERATIONS	BOSTON
+*/
+
+--○ 롤백
+ROLLBACK;
+--==>> 롤백 완료.
+
+--○ 롤백 이후 다시 확인
+SELECT *
+FROM TBL_DEPT;
+--==>>
+/*
+10	ACCOUNTING	NEW YORK
+20	RESEARCH	DALLAS
+30	SALES	    CHICAGO
+40	OPERATIONS	BOSTON
+50	개발부	    서울
+*/
