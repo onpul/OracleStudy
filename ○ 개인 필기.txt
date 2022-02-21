@@ -159,3 +159,26 @@ FROM / WHERE / GROUP BY / HAVING / SELECT / ORDER BY
 ● 데이터 수정(UPDATE → TBL_DEPT)    -> DML 구문
 - 1. UPDATE 쓰고 WHERE 절 쓰고 SET 마지막
 - 2. WHERE 절 필요없어도 일단 쓰고 나중에 지우기
+
+● DESC
+- 두 가지 용도. 절에 따라 사용
+
+FROM / WHERE / GROUP BY / HAVING / SELECT / ORDER BY
+프롬 / 웨얼 / 그룹 바이 / 해빙 / 셀렉트 / 올더 바이
+
+- 컬럼 인덱스는 1부터
+
+●LPAD() --> LEFT
+--> Byte를 확보하여 왼쪽부터 문자로 채우는 기능을 가진 함수
+SELECT 'ORACLE' "COL1"
+     , LPAD('ORACLE', 10, '*') "COL2" 
+FROM DUAL;
+--> 두 번째 파라미터부터 보자!
+
+●LTRIM() 
+-- 손톱깎이!!
+-- O있네? 딸깍, R있네? 딸깍, A있네? 딸깍
+-- 남아있는 거 반환
+
+
+
