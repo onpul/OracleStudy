@@ -435,3 +435,250 @@ FROM DUAL;
 2022-02-22 15:16:58  | 1999-07-02 15:15:00   | 8271  | 0     | 1   | 58  |
 --------------------------------------------------------------------------------
 */
+
+
+--○ 세션 설정 변경
+ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD';
+--==>> Session이(가) 변경되었습니다.
+
+--※ 날짜 데이터를 대상으로 반올림, 절삭 등의 연산을 수행할 수 있다.
+
+--○ 날짜 반올림
+SELECT SYSDATE "COL1"                   -- 2022-02-22  → 기본 현재 날짜
+     , ROUND(SYSDATE, 'YEAR') "COL2"    -- 2022-01-01  → 년도까지 유효한 데이터 (상반기/하반기 기준)
+     , ROUND(SYSDATE, 'MONTH') "COL3"   -- 2022-03-01  → 월까지 유효한 데이터 (15일 기준)
+     , ROUND(SYSDATE, 'DD') "COL4"      -- 2022-02-23  → 일까지 유효한 데이터 (정오 기준)
+     , ROUND(SYSDATE, 'DAY') "COL5"     -- 2022-02-20  → 일까지 유효한 데이터 (수요일 정오 기준)
+FROM DUAL;
+
+--○ 날짜 절삭
+SELECT SYSDATE "COL1"                   -- 2022-02-22  → 기본 현재 날짜
+     , TRUNC(SYSDATE, 'YEAR') "COL2"    -- 2022-01-01  → 년도까지 유효한 데이터 
+     , TRUNC(SYSDATE, 'MONTH') "COL3"   -- 2022-02-01  → 월까지 유효한 데이터
+     , TRUNC(SYSDATE, 'DD') "COL4"      -- 2022-02-22  → 일까지 유효한 데이터
+     , TRUNC(SYSDATE, 'DAY') "COL5"     -- 2022-02-20  → 그 전주에 해당하는 일요일
+FROM DUAL;
+
+
+--------------------------------------------------------------------------------
+
+--■■■ 변환 함수 ■■■--
+
+-- TO_CHAR()    : 숫자나 날짜 데이터를 문자 타입으로 변환시켜주는 함수
+-- TO_DATE()    : 문자 데이터를 날짜 타입으로 변환시켜주는 함수
+-- TO_NUMBER()  : 문자 데이터를 숫자 타입으로 변환시켜주는 함수
+
+--※ 날짜나 통화 형식이 맞지 않을 경우...
+--   설정 값을 통해 세션을 설정하여 사용할 수 있다.
+
+ALTER SESSION SET NLS_LANGUAGE = 'KOREAN';
+ALTER SESSION SET NLS_DATE_LANGUAGE = 'KOREAN';
+ALTER SESSION SET NLS_CURRENCY = '\';   -- 통화 (원으로 설정한 거)
+ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD';
+
+
+--○ 날짜형 → 문자형
+SELECT TO_CHAR(SYSDATE, 'YYYY-MM-DD') "COL1"        -- 2022-02-22
+     , TO_CHAR(SYSDATE, 'YYYY') "COL2"              -- 2022
+     , TO_CHAR(SYSDATE, 'YEAR') "COL3"              -- TWENTY TWENTY-TWO
+     , TO_CHAR(SYSDATE, 'MM') "COL4"                -- 02
+     , TO_CHAR(SYSDATE, 'MONTH') "COL5"             -- 2월 
+     , TO_CHAR(SYSDATE, 'MON') "COL6"               -- 2월 
+     , TO_CHAR(SYSDATE, 'DD') "COL7"                -- 22        --> (일)
+     , TO_CHAR(SYSDATE, 'MM-DD') "COL8"             -- 02-22
+     , TO_CHAR(SYSDATE, 'DAY') "COL9"               -- 화요일    --> (요일)
+     , TO_CHAR(SYSDATE, 'DY') "COL10"               -- 화
+     , TO_CHAR(SYSDATE, 'HH24') "COL11"             -- 16
+     , TO_CHAR(SYSDATE, 'HH') "COL12"               -- 04
+     , TO_CHAR(SYSDATE, 'HH AM') "COL13"            -- 04 오후   --> 지금은 오후니까 오후로 나옴
+     , TO_CHAR(SYSDATE, 'HH PM') "COL14"            -- 04 오후
+     , TO_CHAR(SYSDATE, 'MI') "COL15"               -- 19        --> MINUTE
+     , TO_CHAR(SYSDATE, 'SS') "COL16"               -- 06
+     , TO_CHAR(SYSDATE, 'SSSSS') "COL17"            -- 58746     --> 오늘 날짜 자정부터 지금까지 흘러온 초
+     , TO_CHAR(SYSDATE, 'Q') "COL18"                -- 1         --> 쿼터(분기)
+FROM DUAL;
+
+SELECT 7 "COL1"         --  7 (우측 정렬)
+    , '7' "COL2"        --7   (좌측 정렬)
+    , TO_CHAR(7) "COL3" --7   (좌측 정렬)
+FROM DUAL;
+--> 조회 결과가 좌측 정렬인지 우측 정렬인지 확인~!!!
+
+SELECT '4' "COL1"             -- 좌측 정렬      
+     , TO_NUMBER('4') "COL2"  -- 우측 정렬
+     , 4 "COL3"               -- 우측 정렬  
+     , TO_NUMBER('04') "COL4" -- 우측 정렬
+FROM DUAL;
+--==>> 4	4	4	4
+
+SELECT TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY')) "RESULT"
+FROM DUAL;
+--==> 2022
+
+--○ EXTRACT()
+SELECT TO_CHAR(SYSDATE, 'YYYY') "COL1"      -- 2022(문자형)  → 연도를 추출하여 문자 타입으로 반환
+     , TO_CHAR(SYSDATE, 'MM') "COL2"        -- 02 (문자형)   → 월을 추출하여 문자 타입으로 반환
+     , TO_CHAR(SYSDATE, 'DD') "COL3"        -- 22 (문자형)   → 일을 추출하여 문자 타입으로 반환
+     , EXTRACT(YEAR FROM SYSDATE) "COL4"    -- 2022 (숫자형) → 연도를 추출하여 숫자 타입으로 반환  -- CHECK
+     , EXTRACT(MONTH FROM SYSDATE) "COL5"   -- 2 (숫자형)    → 월을 추출하여 숫자 타입으로 반환    -- CHECK
+     , EXTRACT(DAY FROM SYSDATE) "COL6"     -- 22 (숫자형)   → 일을 추출하여 숫자 타입으로 반환    -- CHECK
+FROM DUAL;
+--> 연, 월, 일 이외의 다른 항목은 불가~!!!
+
+--○ TO_CHAR() 활용 → 형식 맞춤 표기 결과값 반환
+SELECT 60000 "COL1"
+     , TO_CHAR(60000, '99,999') "COL2"
+     , TO_CHAR(60000, '$99,999') "COL3"
+     , TO_CHAR(60000, 'L99,999') "COL4" -- 그 나라에서 쓰는 통화로 표현
+     , LTRIM(TO_CHAR(60000, 'L99,999')) "RESULT"
+FROM DUAL;
+--> 좌측 정렬이 되었으나, 통화 기호의 자리를 확보하기 위해 공백이 쓰임 --> LTRIM 쓰면 없앨 수 있음
+
+
+--※ 세션 설정 변경
+ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS';
+--==>> Session이(가) 변경되었습니다.
+
+
+--○ 현재 시간을 기준으로 1일 2시간 3분 4초 후를 조회한다.
+
+SELECT SYSDATE "현재 시간"
+     , SYSDATE + 1 + (2/24) + (3/(24*60)) + (4/(24*60*60)) "1일 2시간 3분 4초 후"
+FROM DUAL;
+--==>> 2022-02-22 16:47:59
+--     2022-02-23 18:51:03
+
+--○ 현재 시간을 기준으로 1년 2개월 3일 4시간 5분 6초 후를 조회한다.
+--   TO_YMINTERVAL(), TO_DSINTERVAL()
+--      -YEAR MONTH      -DAY SECOND
+--> INTERVAL -> 간격
+SELECT SYSDATE "현재 시간"
+     , SYSDATE + TO_YMINTERVAL('01-02') + TO_DSINTERVAL('003 04:05:06') "연산 시간"
+     --                         연 월                   날짜 시 분 초
+FROM DUAL;
+--==>>
+/*
+2022-02-22 17:05:28	
+2023-04-25 21:10:34
+*/
+--> 문자로 구성된 값을 넘기는 것
+
+
+--------------------------------------------------------------------------------
+
+--○ CASE 구문(조건문, 분기문)
+/*
+CASE
+WHEN
+THEN
+ELSE
+END       
+*/
+
+SELECT CASE 5+2 WHEN 4 THEN '5+2=4' ELSE '5+2는 몰라요' END
+FROM DUAL;
+--==>> 5+2는 몰라요
+
+SELECT CASE 5+2 WHEN 7 THEN '5+2=7' ELSE '5+2=6' END
+FROM DUAL;
+--==>> 5+2=7
+
+SELECT CASE 1+1 WHEN 2 THEN '1+1=2' 
+                WHEN 3 THEN '1+1=3'
+                WHEN 2 THEN '1+1=4'
+                ELSE '난산수싫어'
+       END "RESULT"
+FROM DUAL;
+--==>> 1+1=2
+
+SELECT CASE WHEN 5+2=4 THEN '5+2=4'
+            WHEN 6-3=2 THEN '6-3=2'
+            WHEN 7*1=8 THEN '7*1=8'
+            WHEN 6/2=3 THEN '6/2=3'
+            ELSE '모르겠네' 
+       END "RESULT"
+FROM DUAL;
+--==>> 6/2=3
+-- WHEN 갯수 제한 없음!!!
+
+--○ DECODE()
+SELECT DECODE(5-2, 1, '5-2=1', 2, '5-2=2', 3, '5-2=3', '5-2는 몰라요') "RESULT"
+FROM DUAL;
+--==>> 5-2=3
+-- 파라미터의 갯수 제한 없음!!!
+
+
+--○ CASE WHEN THEN ELSE END (조건문, 분기문) 활용
+SELECT CASE WHEN 5<2 THEN '5<2' 
+            WHEN 5>2 THEN '5>2'
+            ELSE '5와 2는 비교 불가'
+       END "RESULT"
+FROM DUAL;
+--==>> 5>2
+
+SELECT CASE WHEN 5<2 OR 3>1 AND 2=2 THEN '은혜만세' 
+            WHEN 5>2 OR 2=3 THEN '문정만세'
+            ELSE '호석만세'
+       END "RESULT"
+FROM DUAL;
+
+SELECT CASE WHEN F OR 3>1 AND 2=2 THEN '은혜만세' 
+            WHEN 5>2 OR 2=3 THEN '문정만세'
+            ELSE '호석만세'
+       END "RESULT"
+FROM DUAL;
+
+SELECT CASE WHEN F OR T AND 2=2 THEN '은혜만세' 
+            WHEN 5>2 OR 2=3 THEN '문정만세'
+            ELSE '호석만세'
+       END "RESULT"
+FROM DUAL;
+
+SELECT CASE WHEN T AND T THEN '은혜만세' 
+            WHEN 5>2 OR 2=3 THEN '문정만세'
+            ELSE '호석만세'
+       END "RESULT"
+FROM DUAL;
+
+SELECT CASE WHEN T THEN '은혜만세' 
+            WHEN 5>2 OR 2=3 THEN '문정만세'
+            ELSE '호석만세'
+       END "RESULT"
+FROM DUAL;
+
+SELECT CASE WHEN 5<2 OR 3>1 AND 2=2 THEN '은혜만세' 
+            WHEN 5>2 OR 2=3 THEN '문정만세'
+            ELSE '호석만세'
+       END "RESULT"
+FROM DUAL;
+--==>> 은혜만세
+
+SELECT CASE WHEN 3<1 AND 5<2 OR 3>1 AND 2=2 THEN '현수만세'
+            WHEN 5<2 AND 2=3 THEN '이삭만세'
+            ELSE '태형만세'
+       END "RESULT"
+FROM DUAL;
+--==>> 현수만세
+
+SELECT CASE WHEN 3<1 AND (5<2 OR 3>1) AND 2=2 THEN '현수만세'
+            WHEN 5<2 AND 2=3 THEN '이삭만세'
+            ELSE '태형만세'
+       END "RESULT"
+FROM DUAL;
+--==> 태형만세
+
+--------------------------------------------------------------------------------
+SELECT *
+FROM TBL_SAWON;
+
+--○ TBL_SAWON 테이블을 활용하여 
+--   다음과 같은 항목들을 조회할 수 있도록 쿼리문을 구성한다.
+--   사원번호, 사원명, 주민번호, 성별, 입사일
+
+SELECT SANO "사원번호", SANAME "사원명", JUBUN "주민번호"
+    , CASE WHEN SUBSTR(JUBUN, 7, 1) IN ('1', '3') THEN '남성' ELSE '여성' END "성별"
+    , HIREDATE"입사일"
+FROM TBL_SAWON;
+
+
+
