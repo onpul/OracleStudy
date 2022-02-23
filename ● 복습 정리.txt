@@ -334,3 +334,13 @@ FROM DUAL;
 
 --▶ MONTHS_BETWEEN()
 -- 첫 번째 인자값에서 두 번째 인자값을 뺀 개월 수를 반환한다.
+
+--▶ NEXT_DAY()
+/*
+SELECT NEXT_DAY(SYSDATE, '토') "COL1"    -- 가장 빠른 토요일 반환
+     , NEXT_DAY(SYSDATE, '월') "COL2"    -- 가장 빠른 월요일 반환
+FROM DUAL;
+*/
+
+--▶ LAST_DAY()
+-- 해당 날자가 포함되어 있는 그 달의 마지막 날 반환
