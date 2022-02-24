@@ -818,11 +818,185 @@ FROM
 (null)  19
 */
 
+-- 수업 풀이 -------------------------------------------------------------------
+SELECT EXTRACT(YEAR FROM HIREDATE) "입사년도"
+     , COUNT(*) "인원수"
+FROM TBL_EMP
+GROUP BY ROLLUP(EXTRACT(YEAR FROM HIREDATE))
+ORDER BY 1;
+--==>>
+/*
+1980	 1
+1981	10
+1982	 1
+1987	 2
+2022	 5
+(null)  19
+*/
+
+SELECT EXTRACT(YEAR FROM HIREDATE) "입사년도"
+     , COUNT(*) "인원수"
+FROM TBL_EMP
+GROUP BY ROLLUP(TO_CHAR(HIREDATE, 'YYYY'))
+ORDER BY 1;
+--==>> 에러 발생
+--     (ORA-00979: not a GROUP BY expression)
+
+SELECT TO_CHAR(HIREDATE, 'YYYY') "입사년도"
+     , COUNT(*) "인원수"
+FROM TBL_EMP
+GROUP BY ROLLUP(TO_CHAR(HIREDATE, 'YYYY'))
+ORDER BY 1;
+--==>>
+/*
+1980	 1
+1981	10
+1982	 1
+1987	 2
+2022	 5
+(null)  19
+*/
+
+SELECT TO_CHAR(HIREDATE, 'YYYY') "입사년도"
+     , COUNT(*) "인원수"
+FROM TBL_EMP
+GROUP BY ROLLUP(EXTRACT(YEAR FROM HIREDATE))
+ORDER BY 1;
+--==>> 에러 발생
+--     (ORA-00979: not a GROUP BY expression)
+
+-- 그룹 바이에서 이렇게 묶겠다 해놓고 셀렉트에서 다른 조건을 제시하면 에러가 나는 것
+-- 파싱 순서 주의!
+-- 셀렉트에서는 그룹바이에서 수행한 내용을 가지고 써야 한다.
+
+
+SELECT CASE GROUPING(TO_CHAR(HIREDATE, 'YYYY')) WHEN 0 
+            THEN EXTRACT(YEAR FROM HIREDATE) -- 숫자로 하겠다
+            ELSE '전체' -- 문자로 하겠다 --> 에러
+       END "입사년도"
+     , COUNT(*) "인원수"
+FROM TBL_EMP
+GROUP BY CUBE(EXTRACT(YEAR FROM HIREDATE))
+ORDER BY 1;
+--==>> 에러발생
+--     (ORA-00932: inconsistent datatypes: expected NUMBER got CHAR)
+
+
+SELECT CASE GROUPING(TO_CHAR(HIREDATE, 'YYYY')) WHEN 0 -- 2. 문자 타입
+            THEN TO_CHAR(HIREDATE, 'YYYY') -- 1. 문자 타입
+            ELSE '전체' -- 1. 문자 타입
+       END "입사년도"
+     , COUNT(*) "인원수"
+FROM TBL_EMP
+GROUP BY CUBE(TO_CHAR(HIREDATE, 'YYYY')) -- 2. 문자 타입
+ORDER BY 1;
+--==>>
+/*
+1980	1
+1981	10
+1982	1
+1987	2
+2022	5
+전체	19
+*/
+
+
+SELECT CASE GROUPING(EXTRACT(YEAR FROM HIREDATE)) WHEN 0 -- 숫자 타입
+            THEN EXTRACT(YEAR FROM HIREDATE) -- 숫자 타입
+            ELSE -1 -- 숫자 타입
+       END "입사년도"
+     , COUNT(*) "인원수"
+FROM TBL_EMP
+GROUP BY CUBE(EXTRACT(YEAR FROM HIREDATE)) -- 숫자 타입
+ORDER BY 1;
+--==>>
+/*
+-1	    19
+1980	 1
+1981	10
+1982	 1
+1987	 2
+2022	 5
+*/
+
+
+SELECT CASE GROUPING(EXTRACT(YEAR FROM HIREDATE)) WHEN 0 -- 숫자 타입
+            THEN TO_CHAR(EXTRACT(YEAR FROM HIREDATE)) 
+            ELSE '전체'
+       END "입사년도"
+     , COUNT(*) "인원수"
+FROM TBL_EMP
+GROUP BY CUBE(EXTRACT(YEAR FROM HIREDATE)) -- 숫자 타입
+ORDER BY 1;
+--==>>
+/*
+1980	 1
+1981	10
+1982	 1
+1987	 2
+2022	 5
+전체	19
+*/
+
+
+--------------------------------------------------------------------------------
+
+--■■■ HAVING ■■■--
+
+--○ EMP 테이블에서 부서번호가 20, 30 인 부서를 대상으로 
+--   부서의 총 급여가 10000 보다 적을 경우만 부서별 총 급여를 조회한다.
+SELECT *
+FROM EMP;
+
+SELECT DEPTNO, SUM(SAL)
+FROM EMP
+WHERE DEPTNO IN (20, 30)
+GROUP BY DEPTNO;
+--==>>
+/*
+30	 9400
+20	10875
+*/
+
+SELECT DEPTNO, SUM(SAL)
+FROM EMP
+WHERE DEPTNO IN (20, 30)
+  AND SUM(SAL) < 10000
+GROUP BY DEPTNO;
+--==>> 에러 발생
+--     (ORA-00934: group function is not allowed here) -- 그룹 함수를 이곳에서 쓸 수 없다~
+
+
+SELECT DEPTNO, SUM(SAL)
+FROM EMP
+WHERE DEPTNO IN (20, 30)
+GROUP BY DEPTNO
+HAVING SUM(SAL) < 10000;
+--==>> 30	9400
+
+-- 프롬 조건절에 의해
+-- 웨어절에 해당하는 것만 메모리에 올리는 거
+SELECT DEPTNO, SUM(SAL)
+FROM EMP
+GROUP BY DEPTNO
+HAVING SUM(SAL) < 10000
+   AND DEPTNO IN (20, 30);   -->  여기에 쓸 수 있지만, 웨어절에 쓰는 게 더욱 효율적
+--==>> 30	9400
+--> 얘보다 위에 것이 더 효율적이다!!!
+
+
+--------------------------------------------------------------------------------
+
+--■■■ 중첩 그룹함수 / 분석함수 ■■■-
+
+-- 그룹함수... NULL을 제외하고 ... 연산 수행
+-- 그룹 함수는 2 LEVEL 까지 중첩해서 사용할 수 있다. -- 함수 안에 함수 넣기 끝
+-- MSSQL 은 이마저도 불가능하다.
 
 
 
 
 
-   
+
 
 
