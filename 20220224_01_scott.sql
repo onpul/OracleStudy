@@ -993,7 +993,442 @@ HAVING SUM(SAL) < 10000
 -- 그룹 함수는 2 LEVEL 까지 중첩해서 사용할 수 있다. -- 함수 안에 함수 넣기 끝
 -- MSSQL 은 이마저도 불가능하다.
 
+SELECT SUM(SAL)
+FROM EMP
+GROUP BY DEPTNO;
 
+SELECT MAX(SUM(SAL))
+FROM EMP
+GROUP BY DEPTNO;
+--==>> 10875
+
+SELECT MIN(SUM(SAL))
+FROM EMP
+GROUP BY DEPTNO;
+--==>> 8750
+
+
+--○ RANK() 
+--   DENSE_RANK()
+-->  ORACLE 9i 부터 적용... MSSQL 2005 부터 적용
+
+-- 하위 버전에서는 RANK() 나 DENSE_RANK() 를 사용할 수 없기 때문에
+-- 예를 들어... 급여 순위를 구하고자 한다면...
+-- 해당 사원의 급여보다 더 큰 값이 몇 개인지 확인한 후
+-- 확인한 값에 +1 을 추가 연산해 주면...
+-- 그 값이 곧 해당 사원의 급여 등수가 된다.
+
+SELECT ENAME, SAL
+FROM EMP;
+--==>>
+/*
+SMITH	 800
+ALLEN	1600
+WARD	1250
+JONES	2975
+MARTIN	1250
+BLAKE	2850
+CLARK	2450
+SCOTT	3000
+KING	5000
+TURNER	1500
+ADAMS	1100
+JAMES	 950
+FORD	3000
+MILLER	1300
+*/
+
+--○ SMITH의 급여 등수 확인
+SELECT COUNT(*) + 1
+FROM EMP
+WHERE SAL > 800;    -- SMITH 의 급여
+--==>> 14           -- SMITH 의 급여 등수
+
+SELECT COUNT(*) + 1
+FROM EMP
+WHERE SAL > 1600;   -- ALLEN 의 급여
+--==>> 7            -- ALLEN 의 급여 등수                    
+
+--※ 서브 상관 쿼리(상관 서브 쿼리)
+--   메인 쿼리가 있는 테이블의 컬럼이
+--   서브 쿼리의 조건절(WHERE절, HAVING절)에 사용되는 경우
+--   우리는 이 쿼리문을 서브 상관 쿼리(상관 서브 쿼리)라고 부른다.
+
+SELECT ENAME "사원명", SAL "급여", 1 "급여등수"
+FROM EMP;
+--==>>
+/*
+SMITH	 800	1
+ALLEN	1600	1
+WARD	1250	1
+JONES	2975	1
+MARTIN	1250	1
+BLAKE	2850	1
+CLARK	2450	1
+SCOTT	3000	1
+KING	5000	1
+TURNER	1500	1
+ADAMS	1100	1
+JAMES	 950	1
+FORD	3000	1
+MILLER	1300	1
+*/
+
+SELECT COUNT(*) + 1
+FROM EMP
+WHERE SAL > 800;    -- SMITH 의 급여
+--==>> 14           -- SMITH 의 급여 등수
+
+SELECT ENAME "사원명", SAL "급여", (SELECT COUNT(*) + 1 FROM EMP WHERE SAL > 800) "급여등수"
+FROM EMP;
+--=>>
+/*
+SMITH	 800	14
+ALLEN	1600	14
+WARD	1250	14
+JONES	2975	14
+MARTIN	1250	14
+BLAKE	2850	14
+CLARK	2450	14
+SCOTT	3000	14
+KING	5000	14
+TURNER	1500	14
+ADAMS	1100	14
+JAMES	 950	14
+FORD	3000	14
+MILLER	1300	14
+*/
+
+SELECT ENAME "사원명", SAL "급여"
+     , ( SELECT COUNT(*) + 1 
+         FROM EMP 
+         WHERE SAL > E.SAL ) "급여등수"
+FROM EMP E;
+--==>>
+/*
+SMITH	 800	14
+ALLEN	1600	 7
+WARD	1250	10
+JONES	2975	 4
+MARTIN	1250	10
+BLAKE	2850	 5
+CLARK	2450	 6
+SCOTT	3000	 2
+KING	5000	 1
+TURNER	1500	 8
+ADAMS	1100	12
+JAMES	 950	13
+FORD	3000	 2
+MILLER	1300	 9
+*/
+
+
+--○ EMP 테이블을 대상으로
+--   사원명, 급여, 부서번호, 부서내급여등수, 전체급여등수 항목을 조회한다.
+--   단, RANK() 함수를 사용하지 않고 서브상관쿼리를 활용할 수 있도록 한다.
+
+-- 내 풀이 ---------------------------------------------------------------------
+
+SELECT ENAME "사원명", SAL "급여", DEPTNO "부서번호"
+     , ( SELECT COUNT(*) + 1 
+         FROM EMP 
+         WHERE SAL > E.SAL
+           AND DEPTNO = E.DEPTNO ) "부서내급여등수"
+     , ( SELECT COUNT(*) + 1 
+         FROM EMP 
+         WHERE SAL > E.SAL ) "전체급여등수"
+FROM EMP E;
+
+-- 수업 풀이 -------------------------------------------------------------------
+
+SELECT COUNT(*) + 1
+FROM EMP
+WHERE SAL > 800;    -- SMITH 의 급여
+--==>> 14           -- SMITH 의 전체급여등수
+
+SELECT COUNT(*) + 1
+FROM EMP
+WHERE SAL > 800     -- SMITH 의 급여
+  AND DEPTNO = 20;  -- SMITH 의 부서
+--==>> 5            -- SMITH 의 부서내급여등수
+
+
+SELECT ENAME "사원명", SAL "급여", DEPTNO "부서번호"
+     , (1) "부서내급여등수"
+     , (1) "전체급여등수"
+FROM EMP;
+
+
+SELECT ENAME "사원명", SAL "급여", DEPTNO "부서번호"
+     , (SELECT COUNT(*) + 1
+        FROM EMP
+        WHERE SAL > 800     
+        AND DEPTNO = 20) "부서내급여등수"
+     , (SELECT COUNT(*) + 1
+        FROM EMP
+        WHERE SAL > 800) "전체급여등수"
+FROM EMP;
+
+
+SELECT E.ENAME "사원명", E.SAL "급여", E.DEPTNO "부서번호"
+     , (SELECT COUNT(*) + 1
+        FROM EMP
+        WHERE SAL > E.SAL     
+        AND DEPTNO = E.DEPTNO) "부서내급여등수"
+     , (SELECT COUNT(*) + 1
+        FROM EMP
+        WHERE SAL > E.SAL) "전체급여등수"
+FROM EMP E;
+--==>>
+/*
+SMITH	 800	20	5	14
+ALLEN	1600	30	2	 7
+WARD	1250	30	4	10
+JONES	2975	20	3	 4
+MARTIN	1250	30	4	10
+BLAKE	2850	30	1	 5
+CLARK	2450	10	2	 6
+SCOTT	3000	20	1	 2
+KING	5000	10	1	 1
+TURNER	1500	30	3	 8
+ADAMS	1100	20	4	12
+JAMES	 950	30	6	13
+FORD	3000	20	1	 2
+MILLER	1300	10	3	 9
+*/
+
+SELECT *
+FROM EMP
+ORDER BY HIREDATE;
+
+--○ EMP 테이블을 대상으로 다음과 같이 조회될 수 있도록 쿼리문을 구성한다.
+------------------------------------------------------------------------------
+-- 사원명  부서번호  입사일          급여  부서내입사별급여누적
+------------------------------------------------------------------------------
+--                                :
+-- SMITH         20  1980-12-17       800                   800
+-- JONES         20  1981-04-02      2975                  3775
+-- FORD          20  1981-12-03      3000                  6775
+--                                :
+------------------------------------------------------------------------------
+
+-- 내 풀이 ---------------------------------------------------------------------
+
+SELECT ENAME "사원명", DEPTNO "부서번호", HIREDATE "입사일", SAL "급여"
+   , ( SELECT SUM(E.SAL+SAL)
+       FROM EMP
+       WHERE DEPTNO = E.DEPTNO
+         AND HIREDATE < E.HIREDATE
+     ) "부서내입사별급여누적"
+FROM EMP E
+ORDER BY DEPTNO, HIREDATE;
+
+SELECT ENAME "사원명", DEPTNO "부서번호", HIREDATE "입사일", SAL "급여"
+ , NVL(( SELECT SUM(E.SAL+SAL)
+         FROM EMP
+         WHERE DEPTNO = E.DEPTNO
+           AND HIREDATE <= E.HIREDATE
+       ), SAL) "부서내입사별급여누적"
+FROM EMP E
+ORDER BY DEPTNO, HIREDATE;
+
+-- 수업 풀이 -------------------------------------------------------------------
+SELECT EMP.ENAME, DEPTNO, HIREDATE, SAL, (1) "부서내입사별급여누적"
+FROM SCOTT.EMP
+ORDER BY 2, 3;
+
+
+SELECT E1.ENAME "사원명", E1.DEPTNO "부서번호", E1.HIREDATE "입사일", E1.SAL "급여"
+     , (1) "부서내입사별급여누적"
+FROM EMP E1
+ORDER BY 2, 3;
+
+
+SELECT E1.ENAME "사원명", E1.DEPTNO "부서번호", E1.HIREDATE "입사일", E1.SAL "급여"
+     , (SELECT SUM(E2.SAL)
+        FROM EMP E2
+        WHERE E2.DEPTNO = E1.DEPTNO) "부서내입사별급여누적"
+FROM EMP E1
+ORDER BY 2, 3;
+
+
+SELECT E1.ENAME "사원명", E1.DEPTNO "부서번호", E1.HIREDATE "입사일", E1.SAL "급여"
+     , (SELECT SUM(E2.SAL)
+        FROM EMP E2
+        WHERE E2.DEPTNO = E1.DEPTNO
+          AND E2.HIREDATE <= E1.HIREDATE) "부서내입사별급여누적"
+FROM EMP E1
+ORDER BY 2, 3;
+--==>>
+/*
+CLARK	10	1981-06-09	2450	 2450
+KING	10	1981-11-17	5000	 7450
+MILLER	10	1982-01-23	1300	 8750
+SMITH	20	1980-12-17	 800	  800
+JONES	20	1981-04-02	2975	 3775
+FORD	20	1981-12-03	3000	 6775
+SCOTT	20	1987-07-13	3000	10875
+ADAMS	20	1987-07-13	1100	10875
+ALLEN	30	1981-02-20	1600	 1600
+WARD	30	1981-02-22	1250	 2850
+BLAKE	30	1981-05-01	2850	 5700
+TURNER	30	1981-09-08	1500	 7200
+MARTIN	30	1981-09-28	1250	 8450
+JAMES	30	1981-12-03	 950	 9400
+*/
+
+--○ EMP 테이블을 대상으로
+--   입사한 사원의 수가 가장 많았을 때의
+--   입사년월과 인원수를 조회할 수 있도록 쿼리문을 구성한다.
+SELECT *
+FROM EMP
+ORDER BY HIREDATE;
+
+----------------------------------
+--  입사년월  인원수
+----------------------------------
+
+-- 내 풀이 ---------------------------------------------------------------------
+
+SELECT () "입사년월", () "인원수"
+FROM EMP;
+
+SELECT SUM(*)
+FROM EMP
+WHERE TO_CHAR(HIREDATE, 'YYYY-MM') = TO_CHAR(HIREDATE, 'YYYY-MM');
+
+
+SELECT HIREDATE
+    , ( SELECT COUNT(*)
+        FROM EMP
+        WHERE TO_CHAR(HIREDATE, 'YYYY-MM') = TO_CHAR(E.HIREDATE, 'YYYY-MM')
+          AND 
+      ) "입사년월"
+FROM EMP E
+ORDER BY HIREDATE;
+
+SELECT MAX(COUNT(*))
+FROM EMP
+GROUP BY TO_CHAR(HIREDATE, 'YYYY-MM'); 
+
+SELECT TO_CHAR(HIREDATE, 'YYYY-MM') "입사년월"
+     , COUNT(*) "인원수"
+FROM EMP
+GROUP BY TO_CHAR(HIREDATE, 'YYYY-MM')
+HAVING COUNT(*) = ( SELECT MAX(COUNT(*))
+                    FROM EMP
+                    GROUP BY TO_CHAR(HIREDATE, 'YYYY-MM') 
+                  ); 
+                  
+-- 수업 풀이 -------------------------------------------------------------------
+
+SELECT TO_CHAR(SYSDATE, 'YYYY-MM') "년월"
+FROM DUAL;
+--==>> 2022-02
+
+SELECT ENAME, HIREDATE
+FROM EMP
+ORDER BY 2;
+--==>>
+/*
+SMITH	1980-12-17
+ALLEN	1981-02-20
+WARD	1981-02-22
+JONES	1981-04-02
+BLAKE	1981-05-01
+CLARK	1981-06-09
+TURNER	1981-09-08
+MARTIN	1981-09-28
+KING	1981-11-17
+JAMES	1981-12-03
+FORD	1981-12-03
+MILLER	1982-01-23
+SCOTT	1987-07-13
+ADAMS	1987-07-13
+*/
+
+SELECT TO_CHAR(HIREDATE, 'YYYY-MM') "입사년월"
+     , COUNT(*) "인원수"
+FROM EMP
+GROUP BY TO_CHAR(HIREDATE, 'YYYY-MM');
+--==>>
+/*
+1981-05	1
+1981-12	2 ←
+1982-01	1 
+1981-09	2 ←
+1981-02	2 ←
+1981-11	1
+1980-12	1
+1981-04	1
+1987-07	2 ←
+1981-06	1
+*/
+
+
+SELECT TO_CHAR(HIREDATE, 'YYYY-MM') "입사년월"
+     , COUNT(*) "인원수"
+FROM EMP
+WHERE COUNT(*) = 2
+GROUP BY TO_CHAR(HIREDATE, 'YYYY-MM');
+--==>> 에러 발생
+--     (ORA-00934: group function is not allowed here)
+
+
+SELECT TO_CHAR(HIREDATE, 'YYYY-MM') "입사년월"
+     , COUNT(*) "인원수"
+FROM EMP
+GROUP BY TO_CHAR(HIREDATE, 'YYYY-MM')
+HAVING COUNT(*) = 2     -- 년월로 묶어서 가장 많은 인원 수의 입사 카운트
+ORDER BY 1;
+--==>>
+/*
+1981-02 	2
+1981-09	    2
+1981-12	    2
+1987-07	    2
+*/
+
+SELECT COUNT(*)
+FROM EMP
+GROUP BY TO_CHAR(HIREDATE, 'YYYY-MM');
+--==>>
+/*
+1
+2
+1
+2
+2
+1
+1
+1
+2
+1
+*/
+
+-- 년월로 묶어서 가장 많은 인원 수의 입사 카운트
+SELECT MAX(COUNT(*))
+FROM EMP
+GROUP BY TO_CHAR(HIREDATE, 'YYYY-MM');
+--==>> 2
+
+SELECT TO_CHAR(HIREDATE, 'YYYY-MM') "입사년월"
+     , COUNT(*) "인원수"
+FROM EMP
+GROUP BY TO_CHAR(HIREDATE, 'YYYY-MM')
+HAVING COUNT(*) = (
+                    SELECT MAX(COUNT(*))
+                    FROM EMP
+                    GROUP BY TO_CHAR(HIREDATE, 'YYYY-MM')
+                  )  
+ORDER BY 1;
+--==>>
+/*
+1981-02	    2
+1981-09	    2
+1981-12	    2
+1987-07	    2
+*/
 
 
 
