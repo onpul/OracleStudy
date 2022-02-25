@@ -753,8 +753,3 @@ WHERE E1.MGR = E2.EMPNO(+);
 7369	SMITH	CLERK	    7902	FORD	ANALYST
 7839	KING	PRESIDENT	(null)	(null)	(null)
 */
-
-
-
-
-
