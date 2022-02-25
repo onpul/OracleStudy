@@ -298,7 +298,7 @@ FROM VIEW_BOARDLIST;
 1	풀숲	    박현수	2022-02-25 10:29:38
 */
 
---------------------------------------------------------------------------------
+-------------------------------------------------------------------------------- -- 조인 시작
 
 --■■■ JOIN(조인) ■■■--
 
@@ -474,7 +474,7 @@ FROM EMP; -- 사원명, 직종명, 급여, 부서번호
 SELECT *
 FROM DEPT; -- 부서명, 부서번호
 
-SELECT E.DEPTNO "부서번호", D.DNAME "부서명", E.ENAME "사원명", E.JOB "직종명", E.SAL "급여"
+SELECT E.DEPTNO "부서번호", DNAME "부서명", ENAME "사원명", JOB "직종명", SAL "급여"
 FROM EMP E JOIN DEPT D
 ON E.DEPTNO = D.DEPTNO -- FROM에서 ON에 맞게 결합시키는 거 --> WHERE 절보다 먼저 파싱된다.
 WHERE JOB = 'MANAGER' OR JOB = 'CLERK';
@@ -503,13 +503,256 @@ FROM EMP;
 SELECT *
 FROM DEPT;
 
+-- 먼저 92 코드로 써봅시다~
+SELECT DEPTNO, DNAME, ENAME, JOB, SAL
+FROM EMP E, DEPT D
+WHERE E.DEPTNO = D.DEPTNO;
+--==>> 에러 발생
+--     (ORA-00918: column ambiguously defined)
+--     DEPTNO 때문에 발생하는 것.
 
+-- ↓DEPTNO 빼면 에러 안 남
+SELECT DNAME, ENAME, JOB, SAL
+FROM EMP E, DEPT D
+WHERE E.DEPTNO = D.DEPTNO;
+-- DEPTNO가 양쪽에 있는데 나 어떻게 해요~ 이래서 에러나는 거
 
+-- 두 테이블 간 중복되는 컬럼(DEPTNO)에 대한
+-- 소속 테이블을 정해줘야(명시해줘야) 한다.
 
+SELECT E.DEPTNO, DNAME, ENAME, JOB, SAL
+FROM EMP E, DEPT D
+WHERE E.DEPTNO = D.DEPTNO;
+--==>>
+/*
+10	ACCOUNTING	CLARK	MANAGER	    2450
+10	ACCOUNTING	KING	PRESIDENT	5000
+10	ACCOUNTING	MILLER	CLERK	    1300
+20	RESEARCH	JONES	MANAGER	    2975
+20	RESEARCH	FORD	ANALYST	    3000
+20	RESEARCH	ADAMS	CLERK	    1100
+20	RESEARCH	SMITH	CLERK	     800
+20	RESEARCH	SCOTT	ANALYST	    3000
+30	SALES	    WARD	SALESMAN	1250
+30	SALES	    TURNER	SALESMAN	1500
+30	SALES	    ALLEN	SALESMAN	1600
+30	SALES	    JAMES	CLERK	     950
+30	SALES	    BLAKE	MANAGER	    2850
+30	SALES	    MARTIN	SALESMAN	1250
+*/
 
+SELECT D.DEPTNO, DNAME, ENAME, JOB, SAL
+FROM EMP E, DEPT D
+WHERE E.DEPTNO = D.DEPTNO;
+--==>>
+/*
+10	ACCOUNTING	CLARK	MANAGER	    2450
+10	ACCOUNTING	KING	PRESIDENT	5000
+10	ACCOUNTING	MILLER	CLERK	    1300
+20	RESEARCH	JONES	MANAGER	    2975
+20	RESEARCH	FORD	ANALYST	    3000
+20	RESEARCH	ADAMS	CLERK	    1100
+20	RESEARCH	SMITH	CLERK	     800
+20	RESEARCH	SCOTT	ANALYST	    3000
+30	SALES	    WARD	SALESMAN	1250
+30	SALES	    TURNER	SALESMAN	1500
+30	SALES	    ALLEN	SALESMAN	1600
+30	SALES	    JAMES	CLERK	     950
+30	SALES	    BLAKE	MANAGER	    2850
+30	SALES	    MARTIN	SALESMAN	1250
+*/
 
+SELECT D.DEPTNO, DNAME, ENAME, JOB, SAL
+FROM EMP E, DEPT D
+WHERE E.DEPTNO = D.DEPTNO;
+-- E.DEPTNO, E.DEPTNO 둘 다 써도 될까요? -- ㄴㄴ 안 돼요~
 
+--※ 두 테이블 간 중복되는 컬럼에 대해 소속 테이블을 명시하는 경우
+--   부모 테이블의 컬럼을 참조할 수 있도록 처리해야 한다.
 
+-- 자바에서는 상속이라는 문법이 존재했으나 오라클에는 없다. 그럼 어떻게 구분하느냐.
+
+/*
+오라클은 관계형 데이터베이스 관리 시스템
+          R      DB           M    S
+         ------
+         중요한 개념
+
+-- 자바에서 여러개의 작은 클래스가 더 힘이 세다.
+-- 마찬가지로 오라클에서도 여러 개로 쪼개져있는 테이블을 만드는 게 핵심구조이다.
+-- 오라클 하고 나면 JDBC라는 작업을 수행하게 될 때도, 웹 클라이언트에서도, 서버에서도 모두 나누는 게 핵심이 될 것.
+-- 모든 과목의 핵심 키워드는 --> 분리!!!
+
+-- 여러 개로 나누어진 각기 다른 테이블들끼리 연관성이 있어야 관계가 있는 것 
+-- 두 테이블이 관계를 맺고 있어야 부모 자식이 확인이 된다.
+
+-- 부모 자식을 확인할 수 있는 가장 좋은 방법 --> 연결고리 확인!!!
+-- 연결 고리 컬럼 -> DEPTNO !
+*/
+
+SELECT *
+FROM EMP; --> DEPTNO 여러 개 / 자식 테이블
+
+SELECT *
+FROM DEPT; --> DEPTNO 각 한 개씩!!! / 부모 테이블
+
+--> DEPT의 DEPTNO 컬럼을 EMP에서 여럿이 참조하는 상황
+--  한 부모의 여러 자식 가능 --> DEPT가 부모테이블이다~!
+
+-- 최종 풀이
+SELECT D.DEPTNO, DNAME, E.ENAME, E.JOB, E.SAL
+FROM EMP E, DEPT D
+WHERE E.DEPTNO = D.DEPTNO
+  AND E.JOB IN ('MANAGER', 'CLERK');
+--==>>
+/*
+10	ACCOUNTING	CLARK	MANAGER	2450
+10	ACCOUNTING	MILLER	CLERK	1300
+20	RESEARCH	ADAMS	CLERK	1100
+20	RESEARCH	JONES	MANAGER	2975
+20	RESEARCH	SMITH	CLERK	 800
+30	SALES	    BLAKE	MANAGER	2850
+30	SALES	    JAMES	CLERK	 950
+*/
+
+--------------------------------------------------------------------------------
+-- 왜 부모 테이블을 참조해야 하는지 설명
+
+SELECT E.DEPTNO, DNAME, ENAME, JOB, SAL
+FROM EMP E, DEPT D
+WHERE E.DEPTNO(+) = D.DEPTNO;
+--==>>
+/*
+10	    ACCOUNTING	CLARK	MANAGER	    2450
+10	    ACCOUNTING	KING	PRESIDENT	5000
+10	    ACCOUNTING	MILLER	CLERK	    1300
+20	    RESEARCH	JONES	MANAGER	    2975
+20	    RESEARCH	FORD	ANALYST	    3000
+20	    RESEARCH	ADAMS	CLERK	    1100
+20	    RESEARCH	SMITH	CLERK	     800
+20	    RESEARCH	SCOTT	ANALYST 	3000
+30	    SALES	    WARD	SALESMAN	1250
+30	    SALES	    TURNER	SALESMAN	1500
+30	    SALES	    ALLEN	SALESMAN	1600
+30	    SALES	    JAMES	CLERK	     950
+30	    SALES	    BLAKE	MANAGER	    2850
+30	    SALES	    MARTIN	SALESMAN	1250
+(null)	OPERATIONS	(null)	(null)	   (null) --> DEPTNO 없음 (자식테이블 참조)
+*/
+
+SELECT D.DEPTNO, DNAME, ENAME, JOB, SAL
+FROM EMP E, DEPT D
+WHERE E.DEPTNO(+) = D.DEPTNO;
+--==>>
+/*
+10	ACCOUNTING	CLARK	MANAGER	    2450
+10	ACCOUNTING	KING	PRESIDENT	5000
+10	ACCOUNTING	MILLER	CLERK	    1300
+20	RESEARCH	JONES	MANAGER	    2975
+20	RESEARCH	FORD	ANALYST	    3000
+20	RESEARCH	ADAMS	CLERK	    1100
+20	RESEARCH	SMITH	CLERK	     800
+20	RESEARCH	SCOTT	ANALYST	    3000
+30	SALES	    WARD	SALESMAN	1250
+30	SALES	    TURNER	SALESMAN	1500
+30	SALES	    ALLEN	SALESMAN	1600
+30	SALES	    JAMES	CLERK	     950
+30	SALES	    BLAKE	MANAGER	    2850
+30	SALES	    MARTIN	SALESMAN	1250
+40	OPERATIONS	(null)	(null)	   (null) --> DEPTNO 있음 (부모테이블 참조)	
+*/
+
+SELECT D.DEPTNO, D.DNAME, E.ENAME, E.JOB, E.SAL --> 얘네들도 소속 테이블 표시를 하도록 당부합니다!
+FROM EMP E, DEPT D                                
+WHERE E.DEPTNO = D.DEPTNO;
+--> 이유
+--  위에서 DEPTNO의 소속을 표시하지 않았을 때 에러가 났다는 것은, 
+--  SELECT 문에서 D와 E를 모두 다녀온다는 것
+--  다른 컬럼들도 명시해 주면 오라클이 빠르게 일할 수 있도록 도와줄 수 있다.
+--  쌤의 개인적인 권장!!
+
+--※ 두 테이블에 모두 포함되어 있는 중복된 컬럼이 아니더라도
+--   조인하는 과정에서 컬럼의 소속 테이블을 명시해 줄 수 있도록 권장한다.
+
+--------------------------------------------------------------------------------
+--○ SELF JOIN (자기 조인)
+
+-- EMP 테이블의 데이터를 다음과 같이 조회할 수 있도록
+-- 쿼리문을 구성한다.
+-----------------------------------------------------------
+-- 사원번호 사원명 직종명 관리자번호 관리자명 관리자직종명
+-----------------------------------------------------------
+-- 7369     SMITH  CLERK  7902       FORD     ANALYST
+
+-- 내 풀이 ---------------------------------------------------------------------
+
+SELECT *
+FROM EMP;
+
+SELECT E2.DEPTNO "사원번호", E2.ENAME "사원명", E2.JOB "직종명"
+     , E.EMPNO "관리자번호", E.ENAME "관리자명", E.JOB "관리자직종명"
+FROM EMP E JOIN EMP E2
+ON E.EMPNO = E2.EMPNO; 
+
+-- 수업 풀이 -------------------------------------------------------------------
+
+-- EMP 테이블의 데이터를 다음과 같이 조회할 수 있도록
+-- 쿼리문을 구성한다.
+-----------------------------------------------------------
+-- 사원번호 사원명 직종명 관리자번호 관리자명 관리자직종명
+-----------------------------------------------------------
+-- 7369     SMITH  CLERK  7902       FORD     ANALYST
+--  |         |      |     |          |         |
+-- EMP1     EMP1   EMP1   EMP1        |         |
+--                        (MGR)       |         |
+--                         |          |         |
+--                        EMP2      EMP2      EMP2
+--                       (EMPNO)
+
+SELECT E1.EMPNO "사원번호", E1.ENAME "사원명", E1.JOB "직종명", E2.EMPNO "관리자번호" --E1.MGR"관리자번호"
+     , E2.ENAME "관리자명", E2.JOB "관리자직종명"
+FROM EMP E1 LEFT JOIN EMP E2 -- 그냥 JOIN 하면 KING이 누락됨 -- 관리자가 NULL
+ON E1.MGR = E2.EMPNO; 
+--==>>
+/*
+7902	FORD	ANALYST	    7566	JONES	MANAGER
+7788	SCOTT	ANALYST	    7566	JONES	MANAGER
+7900	JAMES	CLERK	    7698	BLAKE	MANAGER
+7844	TURNER	SALESMAN	7698	BLAKE	MANAGER
+7654	MARTIN	SALESMAN	7698	BLAKE	MANAGER
+7521	WARD	SALESMAN	7698	BLAKE	MANAGER
+7499	ALLEN	SALESMAN	7698	BLAKE	MANAGER
+7934	MILLER	CLERK	    7782	CLARK	MANAGER
+7876	ADAMS	CLERK	    7788	SCOTT	ANALYST
+7782	CLARK	MANAGER 	7839	KING	PRESIDENT
+7698	BLAKE	MANAGER	    7839	KING	PRESIDENT
+7566	JONES	MANAGER	    7839	KING	PRESIDENT
+7369	SMITH	CLERK	    7902	FORD	ANALYST
+7839	KING	PRESIDENT	(null)	(null)	(null)
+*/
+
+-- 92코드
+SELECT E1.EMPNO "사원번호", E1.ENAME "사원명", E1.JOB "직종명", E2.EMPNO "관리자번호" 
+     , E2.ENAME "관리자명", E2.JOB "관리자직종명"
+FROM EMP E1, EMP E2 
+WHERE E1.MGR = E2.EMPNO(+); 
+--==>>
+/*
+7902	FORD	ANALYST	    7566	JONES	MANAGER
+7788	SCOTT	ANALYST	    7566	JONES	MANAGER
+7900	JAMES	CLERK	    7698	BLAKE	MANAGER
+7844	TURNER	SALESMAN	7698	BLAKE	MANAGER
+7654	MARTIN	SALESMAN	7698	BLAKE	MANAGER
+7521	WARD	SALESMAN	7698	BLAKE	MANAGER
+7499	ALLEN	SALESMAN	7698	BLAKE	MANAGER
+7934	MILLER	CLERK	    7782	CLARK	MANAGER
+7876	ADAMS	CLERK	    7788	SCOTT	ANALYST
+7782	CLARK	MANAGER 	7839	KING	PRESIDENT
+7698	BLAKE	MANAGER	    7839	KING	PRESIDENT
+7566	JONES	MANAGER	    7839	KING	PRESIDENT
+7369	SMITH	CLERK	    7902	FORD	ANALYST
+7839	KING	PRESIDENT	(null)	(null)	(null)
+*/
 
 
 
