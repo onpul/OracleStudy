@@ -895,6 +895,14 @@ WHERE TO_CHAR(IBSADATE, 'YYYY') = '2000'
 
 21. 주민번호를 기준으로 직원의 나이 조회.
     단, 모든 직원이 1900년대에 태어났다는 가정. (이름, 주민번호, 나이)
+    
+SELECT NAME "이름", SSN "주민번호"
+     , TO_NUMBER(TO_CHAR(SYSDATE, 'YYYY')) - TO_NUMBER('19' || SUBSTR(SSN, 1, 2)) + 1 "나이"
+FROM TBL_INSA;
+
+SELECT NAME "이름", SSN "주민번호"
+     , EXTRACT(YEAR FROM SYSDATE) - (TO_NUMBER(SUBSTR(SSN, 1, 2)) + 1899) "나이"
+FROM TBL_INSA;
 
 22. 주민번호 기준으로 현재 나이대가 20대인 사람만 조회.
 
