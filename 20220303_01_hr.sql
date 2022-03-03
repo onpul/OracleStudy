@@ -262,7 +262,7 @@ WHERE 회사ID = 10;
 --※ 관계(Relation)의 종류
 
 -- 1 : many 관계    (1 : 다 관계)
---> 제 1 정규화를 적용하여 수행을 마친 결과물에서 나타나는 바람직함 관계.
+--> 제 1 정규화를 적용하여 수행을 마친 결과물에서 나타나는 바람직한 관계.
 --  관계형 데이터베이스를 활용하는 과정에서 추구해야 하는 관계.
 
 -- 1 : 1 관계       (1 : 1 관계)
@@ -281,18 +281,528 @@ WHERE 회사ID = 10;
 --  실제 물리적인 모델링에서는 존재할 수 없는 관계.
 /*
 -- 테이블명 : 고객                     - 테이블명 : 제품
-------------------------------------   ----------------------------------------
+------------------------------------   ----------------------------------------  --> 논리적으로는 가능하나, 물리적으로는 거래 불가
 고객번호 고객명 이메일 전화번호        제품번호 제품명 제품단가 제품설명 ...  
 ------------------------------------   ----------------------------------------
  1001    최선하 csh@t.. 010...         pkdlek   새우깡    600   새우가 들어...
  1002    김상기 ksk@t.. 010...         skfkfc   자갈치    500   자갈이 들어...
  1003    박현지 phj@t.. 010...         rkawkr   감자깡    400   감자가 들어...
  1004    한충희 hch@t.. 010...         rhrnak   고구마깡  400   고구마가 들어.
-               :
+               :                                         :
 ------------------------------------   ----------------------------------------
+
+                     - 테이블명 : 주문접수(판매)
+                     ---------------------------------------
+                     고객번호  제품번호  주문일자   주문수량
+                     ---------------------------------------
+                     1001      rhrnak    2022-03-.. 10
+                     1001      pkdlek    2022-03-.. 20
+                     1002      rhrnak    2022-03-.. 20
+                                       :
+                     ---------------------------------------            
+*/
+
+-- 제 4 정규화
+--> 위에서 확인과 내용과 같이 『many(다) : many(다)』 관계를
+--  『1(일) : many(다)』 관계로 깨뜨리는 가정이 바로 제 4 정규화 수행 과정이다.
+--  → 파생 테이블 생성 → 다:다 관계를 1:다 관계로 깨뜨리는 역할 수행
+ 
+ 
+-- 역정규화(비정규화) --> 거스르다, 아니다 / 합치는 거
+-- 업무 로직 파악이 되어있어야 역정규화 할지 말지 판단할 수 있음
+/*
+-- A 경우 → 역정규화를 수행하지 않는 것이 바람직한 경우~!!!
+
+-- 테이블명 : 부서             -- 테이블명 : 사원
+10        10      10           10        10      10    10    10      10           10
+-----------------------        ----------------------------------------------- + ---------
+부서번호  부서명  주소         사원번호  사원명  직급  급여  입사일  부서번호     부서명
+-----------------------        ----------------------------------------------- + ---------
+       10개 행                                 1,000,000 개 행
+-----------------------        ----------------------------------------------- + ---------
+
+--> 조회 결과물
+-------------------------
+부서명 사원명 직급 급여
+-------------------------
+
+--> 『부서』테이블과 『사원』테이블을 JOIN 했을 때의 크기
+--  (10*30Byte)   +   (1,000,000*60Byte)
+
+--> 『사원』테이블을 역정규화 한 후 이 테이블만 읽어올 때의 크기
+--  1000000*70Byte
+
+
+-- B 경우 → 역정규화를 수행하는 것이 바람직한 경우~!!!
+
+-- 테이블명 : 부서             -- 테이블명 : 사원
+10        10      10           10        10      10    10    10      10           10
+-----------------------        ----------------------------------------------- + ---------
+부서번호  부서명  주소         사원번호  사원명  직급  급여  입사일  부서번호     부서명
+-----------------------        ----------------------------------------------- + ---------
+     500,000 개 행                              1,000,000 개 행
+-----------------------        ----------------------------------------------- + ---------
+
+--> 조회 결과물
+-------------------------
+부서명 사원명 직급 급여
+-------------------------
+
+--> 『부서』테이블과 『사원』테이블을 JOIN 했을 때의 크기
+--  (500,000*30Byte)   +   (1,000,000*60Byte) = 15000000 + 60000000 = 750000000
+
+--> 『사원』테이블을 역정규화 한 후 이 테이블만 읽어올 때의 크기
+--  1000000*70Byte = 70000000
 */
 
 
+--------------------------------------------------------------------------------
+
+--※ 참고
+/*
+1. 관계(relationship, relation)
+   - 모든 엔트리(entry)는 단일값을 가진다.
+   - 각 열(column)은 유일한 이름을 가지며 순서는 무의미하다.
+   - 테이블의 모든 행(row==튜플==tuple)은 동일하지 않으며 순서는 무의미하다.
+
+2. 속성(attribute)
+   - 테이블의 열(column)을 나타낸다.
+   - 자료의 이름을 가진 최소 논리적 단위 : 객체의 성질, 상태 기술
+   - 일반 파일(file)의 항목(아이템==item==필드==field)에 해당한다.
+   - 엔티티(entitiy)의 특성과 상태를 기술
+   - 속성(attribute)의 이름은 모두 달라야 한다.
+
+3. 튜플==tuple==엔티티==entity
+   - 테이블의 행(row)
+   - 연관된 몇 개의 속성으로 구성
+   - 개념 정보 단위
+   - 일반 파일(file)의 레코드(record)에 해당한다.
+   - 튜플 변수(tuple variable)
+     : 튜플(tuple)을 가리키는 변수, 모든 튜플 집합을 도메인으로 하는 변수
+
+4. 도메인(domain)
+   - 각 속성(attribute)이 가질 수 있도록 허용된 값들의 집합
+   - 속성 명과 도메인 명이 반드시 동일할 필요는 없음
+   - 모든 릴레이션에서 모든 속성들의 도메인은 원자적(atomic)이어야 함.
+   - 원자적 도메인
+     : 도메인의 원소가 더 이상 나누어질 수 없는 단일체일 때를 나타냄.
+
+5. 릴레이션(relation)
+   - 파일 시스템에서 파일과 같은 개념
+   - 중복된 튜플(tuple==entity==엔티티)을 포함하지 않는다. → 모두 상이함(튜플의 유일성)
+   - 릴레이션==튜플(엔티티=-entity)의 집합. 따라서 튜플의 순서는 무의미하다.
+   - 속성(attribute)간에는 순서가 없다.
+*/
+
+
+--------------------------------------------------------------------------------
+SELECT *
+FROM EMPLOYEES;
+
+SELECT *
+FROM DEPARTMENTS;
+
+/*
+모니터 --> 불량화소 무결점 확인 --- 5 ~ 7 만원 더 비쌌다
+한 군데 이상이 발생하면 다 의심하게 됨
+
+무결성 유지를 위해 필요
+*/
+
+--■■■ 무결성(Integrity) ■■■--
+/*
+1. 무결성에는 개체 무결성(Entity Integrity)
+              참조 무결성(Relational Integrity)
+              도메인 무결성(Domain Integrity)이 있다.
+              
+2. 개체 무결성(Entity Integrity)  --> 똑같은 행 못 들어가게                                              
+   개체 무결성은 릴레이션에서 저장되는 튜플(tuple)의          
+   유일성을 보장하기 위한 제약조건이다.
+
+3. 참조 무결성(Relational Integrity)  --> 부모테이블에 없는 값 입력하면                                       
+   참조 무결성은 릴레이션 간의 데이터 일관성을
+   보장하기 위한 제약조건이다.
+
+4. 도메인 무결성(Domain Integrity)  --> 큰 의미로 ... 데이터 타입
+   도메인 무결성은 허용 가능한 값의 범위를
+   지정하기 위한 제약조건이다.
+
+5. 제약조건의 종류
+
+   - PRIMARY KEY(PK:P) → 기본키, 고유키
+     해당 컬럼의 값은 반드시 존재해야 하며, 유일해야 한다.
+     (NOT NULL과 UNIQUE가 결합된 형태)
+   
+   - FOREIGN KEY(FK:F:R) → 외래키, 외부키, 참조키
+     해당 컬럼의 값은 참조되는 테이블의 컬럼 데이터들 중 하나와
+     일치하거나 NULL을 가진다.
+    
+   - UNIQUE(UK:U)
+     테이블 내에서 해당 컬럼의 값은 항상 유일해야 한다.
+     
+   - NOT NULL(NN:CK:C)
+     해당 컬럼은 NULL을 포함할 수 없다.
+     
+   - CHECK(CK:C)
+     해당 컬럼에 저장 가능한 데이터의 값의 범위나 조건을 지정한다.
+*/
+
+--------------------------------------------------------------------------------
+
+--■■■ PRIMARY KEY(PK:P) ■■■--
+
+--1. 테이블에 대한 기본 키를 생성한다.
+
+--2. 테이블에서 각 행을 유일하게 식별하는 컬럼 또는 컬럼의 집합이다.
+--   기본 키는 테이블 당 최대 하나만 존재한다.
+--   그러나 반드시 하나의 컬럼으로만 구성되는 것은 아니다.
+--   NULL일 수 없고, 이미 테이블에 존재하고 있는 데이터를
+--   다시 입력할 수 없도록 처리한다.
+--   UNIQUE INDEX가 자동으로 생성된다. (오라클이 자체적으로 만든다.)
+
+-- 3. 형식 및 구조
+-- ① 컬럼 레벨의 형식
+-- 컬럼명 데이터타입 [CONSTRAINT CONSTRINT명] PRIMARY KEY[(컬럼명, ...)] --> '[]'은 생략 가능
+
+-- ② 테이블 레벨의 형식 --> 가급적이면 테이블 레벨로 지정하자
+-- 컬럼명 데이터타입,
+-- 컬럼명 데이터타입,
+-- CONSTRAINT CONSTRAINT명 PRIMARY KEY(컬럼명, ...)
+
+-- 4. CONSTRAINT 추가 시 CONSTRAINT 명을 생략하면
+--    오라클 서버가 자동으로 CONSTRAINT 명을 부여한다.
+--    일반적으로 CONSTRAINT 명은 『테이블명_컬럼명_CONSTRAINT약자』
+--    형식으로 기술한다.
+
+--○ PK 지정 실습(① 컬럼 레벨의 형식)
+-- 테이블 생성
+CREATE TABLE TBL_TEST1
+( COL1 NUMBER(5)      PRIMARY KEY
+, COL2 VARCHAR2(30)
+);
+--==>> Table TBL_TEST1이(가) 생성되었습니다.
+
+-- 데이터 입력
+INSERT INTO TBL_TEST1(COL1, COL2) VALUES(1, 'TEST');
+--==>> 1 행 이(가) 삽입되었습니다.
+INSERT INTO TBL_TEST1(COL1, COL2) VALUES(1, 'TEST'); 
+--==>> 에러 발생(ORA-00001: unique constraint (HR.SYS_C007051) violated)
+INSERT INTO TBL_TEST1(COL1, COL2) VALUES(1, 'ABCD'); 
+--==>> 에러 발생(ORA-00001: unique constraint (HR.SYS_C007051) violated)
+INSERT INTO TBL_TEST1(COL1, COL2) VALUES(2, 'ABCD'); 
+--==>> 1 행 이(가) 삽입되었습니다.
+INSERT INTO TBL_TEST1(COL1, COL2) VALUES(3, NULL); 
+--==>> 1 행 이(가) 삽입되었습니다.
+INSERT INTO TBL_TEST1(COL1) VALUES(4); 
+--==>> 1 행 이(가) 삽입되었습니다.
+INSERT INTO TBL_TEST1(COL1) VALUES(4); 
+--==>> 에러 발생(ORA-00001: unique constraint (HR.SYS_C007051) violated)
+INSERT INTO TBL_TEST1(COL1, COL2) VALUES(5, 'ABCD');
+--==>> 1 행 이(가) 삽입되었습니다.
+INSERT INTO TBL_TEST1(COL1, COL2) VALUES(NULL, NULL);
+--==>> 에러 발생(ORA-01400: cannot insert NULL into ("HR"."TBL_TEST1"."COL1"))
+
+COMMIT;
+--==>> 커밋 완료.
+
+SELECT *
+FROM TBL_TEST1;
+--==>>
+/*
+1	TEST
+2	ABCD
+3	
+4	
+5	ABCD
+*/
+
+DESC TBL_TEST1;
+--==>>
+/*
+이름   널?       유형           
+---- -------- ------------ 
+COL1 NOT NULL NUMBER(5)     → PK 제약조건 확인 불가
+COL2          VARCHAR2(30) 
+*/
+
+--※ 제약 조건 확인 
+SELECT *
+FROM USER_CONSTRAINTS
+WHERE TABLE_NAME = 'TBL_TEST1';
+--==>> HR	SYS_C007051	P	TBL_TEST1					ENABLED	NOT DEFERRABLE	IMMEDIATE	VALIDATED	GENERATED NAME			2022-03-03	HR	SYS_C007051		
+--          -----------
+
+
+--※ 제약조건이 지정된 컬럼 확인(조회)
+SELECT *
+FROM USER_CONS_COLUMNS
+WHERE TABLE_NAME = 'TBL_TEST1';
+--==>> HR	SYS_C007051	TBL_TEST1	COL1	1
+--          -----------             ----
+--          제약조건 명            대상컬럼
+
+
+--※ USER_CONSTRAINTS 와 USER_CONS_COLUMNS 를 대상으로
+--   제약조건이 설정된 소유주, 제약조건명, 테이블명, 제약조건종류, 컬럼명 항목을 조회한다.
+--                     A,B     A,B         B          A            B   
+SELECT A.OWNER "소유주", A.CONSTRAINT_NAME "제약조건명", B.TABLE_NAME "테이블명"
+     , A.CONSTRAINT_TYPE "제약조건종류", B.COLUMN_NAME "컬럼명"
+FROM USER_CONSTRAINTS A JOIN USER_CONS_COLUMNS B
+ON A.CONSTRAINT_NAME = B.CONSTRAINT_NAME;
+
+SELECT *
+FROM USER_CONSTRAINTS; -- A
+
+SELECT *
+FROM USER_CONS_COLUMNS; -- B
+
+-- 수업 풀이 -------------------------------------------------------------------
+
+SELECT UC.OWNER, UC.CONSTRAINT_NAME, UC.TABLE_NAME, UC.CONSTRAINT_TYPE
+     , UCC.COLUMN_NAME
+FROM USER_CONSTRAINTS UC, USER_CONS_COLUMNS UCC
+WHERE UC.CONSTRAINT_NAME = UCC.CONSTRAINT_NAME;
+--==>>
+/*
+HR	REGION_ID_NN	REGIONS	C	REGION_ID
+HR	REG_ID_PK	REGIONS	P	REGION_ID
+HR	COUNTRY_ID_NN	COUNTRIES	C	COUNTRY_ID
+HR	COUNTRY_C_ID_PK	COUNTRIES	P	COUNTRY_ID
+HR	COUNTR_REG_FK	COUNTRIES	R	REGION_ID
+HR	LOC_ID_PK	LOCATIONS	P	LOCATION_ID
+HR	LOC_CITY_NN	LOCATIONS	C	CITY
+HR	LOC_C_ID_FK	LOCATIONS	R	COUNTRY_ID
+HR	DEPT_ID_PK	DEPARTMENTS	P	DEPARTMENT_ID
+HR	DEPT_NAME_NN	DEPARTMENTS	C	DEPARTMENT_NAME
+HR	DEPT_MGR_FK	DEPARTMENTS	R	MANAGER_ID
+HR	DEPT_LOC_FK	DEPARTMENTS	R	LOCATION_ID
+HR	JOB_ID_PK	JOBS	P	JOB_ID
+HR	JOB_TITLE_NN	JOBS	C	JOB_TITLE
+HR	EMP_EMP_ID_PK	EMPLOYEES	P	EMPLOYEE_ID
+HR	EMP_LAST_NAME_NN	EMPLOYEES	C	LAST_NAME
+HR	EMP_EMAIL_NN	EMPLOYEES	C	EMAIL
+HR	EMP_EMAIL_UK	EMPLOYEES	U	EMAIL
+HR	EMP_HIRE_DATE_NN	EMPLOYEES	C	HIRE_DATE
+HR	EMP_JOB_NN	EMPLOYEES	C	JOB_ID
+HR	EMP_JOB_FK	EMPLOYEES	R	JOB_ID
+HR	EMP_SALARY_MIN	EMPLOYEES	C	SALARY
+HR	EMP_MANAGER_FK	EMPLOYEES	R	MANAGER_ID
+HR	EMP_DEPT_FK	EMPLOYEES	R	DEPARTMENT_ID
+HR	JHIST_EMPLOYEE_NN	JOB_HISTORY	C	EMPLOYEE_ID
+HR	JHIST_EMP_FK	JOB_HISTORY	R	EMPLOYEE_ID
+HR	JHIST_EMP_ID_ST_DATE_PK	JOB_HISTORY	P	EMPLOYEE_ID
+HR	JHIST_START_DATE_NN	JOB_HISTORY	C	START_DATE
+HR	JHIST_DATE_INTERVAL	JOB_HISTORY	C	START_DATE
+HR	JHIST_EMP_ID_ST_DATE_PK	JOB_HISTORY	P	START_DATE
+HR	JHIST_END_DATE_NN	JOB_HISTORY	C	END_DATE
+HR	JHIST_DATE_INTERVAL	JOB_HISTORY	C	END_DATE
+HR	JHIST_JOB_NN	JOB_HISTORY	C	JOB_ID
+HR	JHIST_JOB_FK	JOB_HISTORY	R	JOB_ID
+HR	JHIST_DEPT_FK	JOB_HISTORY	R	DEPARTMENT_ID
+HR	SYS_C007051	TBL_TEST1	P	COL1
+*/
+
+SELECT UC.OWNER, UC.CONSTRAINT_NAME, UC.TABLE_NAME, UC.CONSTRAINT_TYPE
+     , UCC.COLUMN_NAME
+FROM USER_CONSTRAINTS UC, USER_CONS_COLUMNS UCC
+WHERE UC.CONSTRAINT_NAME = UCC.CONSTRAINT_NAME
+  AND UC.TABLE_NAME = 'TBL_TEST1';
+--==>> HR	SYS_C007051	TBL_TEST1	P	COL1
+
+
+--○ PK 지정 실습(② 테이블 레벨의 형식)
+-- 테이블 생성
+CREATE TABLE TBL_TEST2
+( COL1 NUMBER(5)      
+, COL2 VARCHAR2(30)
+, CONSTRAINT TEST2_COL1_PK PRIMARY KEY(COL1)
+);
+--==>> Table TBL_TEST2이(가) 생성되었습니다.
+
+-- 데이터 입력
+INSERT INTO TBL_TEST2(COL1, COL2) VALUES(1, 'TEST');
+INSERT INTO TBL_TEST2(COL1, COL2) VALUES(1, 'TEST'); --> 에러 발생
+INSERT INTO TBL_TEST2(COL1, COL2) VALUES(1, 'ABCD'); --> 에러 발생
+INSERT INTO TBL_TEST2(COL1, COL2) VALUES(2, 'ABCD');
+INSERT INTO TBL_TEST2(COL1, COL2) VALUES(3, NULL);
+INSERT INTO TBL_TEST2(COL1) VALUES(4);
+INSERT INTO TBL_TEST2(COL1) VALUES(4); --> 에러 발생
+INSERT INTO TBL_TEST2(COL1, COL2) VALUES(5, 'ABCD');
+INSERT INTO TBL_TEST2(COL1, COL2) VALUES(NULL, NULL); --> 에러 발생(첫 번째 컬럼 때문에)
+
+COMMIT;
+--==>> 커밋 완료.
+
+SELECT *
+FROM TBL_TEST2;
+--==>>
+/*
+1	TEST
+2	ABCD
+3	
+4	
+5	ABCD
+*/
+
+--○ USER_CONSTRAINTS 와 USER_CONS_COLUMNS 를 대상으로 
+-- 제약조건이 설정된 소유주, 제약조건명, 테이블명, 제약조건종류, 컬럼명 항목을 조회한다.
+SELECT UC.OWNER, UC.CONSTRAINT_NAME, UC.TABLE_NAME, UC.CONSTRAINT_TYPE
+     , UCC.COLUMN_NAME
+FROM USER_CONSTRAINTS UC, USER_CONS_COLUMNS UCC
+WHERE UC.CONSTRAINT_NAME = UCC.CONSTRAINT_NAME
+  AND UC.TABLE_NAME = 'TBL_TEST2';
+--==>> HR	TEST2_COL1_PK	TBL_TEST2	P	COL1
+--          ------------- 지정한 이름!
+
+--○ PK 지정 실습(③ 다중 컬럼 PK 지정)
+-- 테이블 생성
+CREATE TABLE TBL_TEST3
+( COL1 NUMBER(5)
+, COL2 VARCHAR(30)
+, CONSTRAINT TEST3_COL1_COL2_PK PRIMARY KEY(COL1, COL2)
+);
+--==>> Table TBL_TEST3이(가) 생성되었습니다.
+
+-- 데이터 입력
+INSERT INTO TBL_TEST3(COL1, COL2) VALUES(1, 'TEST');
+INSERT INTO TBL_TEST3(COL1, COL2) VALUES(1, 'TEST'); --> 에러 발생
+INSERT INTO TBL_TEST3(COL1, COL2) VALUES(1, 'ABCD');
+INSERT INTO TBL_TEST3(COL1, COL2) VALUES(2, 'ABCD');
+INSERT INTO TBL_TEST3(COL1, COL2) VALUES(3, NULL); --> 에러 발생 (첫 번째도 두 번째도 널이면 안 됨)
+INSERT INTO TBL_TEST3(COL1) VALUES(4); --> 에러 발생 (첫 번째도 두 번째도 널이면 안 됨)
+INSERT INTO TBL_TEST3(COL1, COL2) VALUES(5, 'ABCD');
+INSERT INTO TBL_TEST3(COL1, COL2) VALUES(NULL, NULL); --> 에러 발생 (첫 번째도 두 번째도 널이면 안 됨)
+
+COMMIT;
+--==>> 커밋 완료.
+
+SELECT *
+FROM TBL_TEST3;
+/*
+1	ABCD
+1	TEST
+2	ABCD
+5	ABCD
+*/
+
+
+--○ PK 지정 실습(④ 테이블 생성 이후 제약조건 추가 설정)
+-- 테이블 생성
+CREATE TABLE TBL_TEST4
+( COL1 NUMBER(5)
+, COL2 VARCHAR2(30)
+);
+--==>> Table TBL_TEST4이(가) 생성되었습니다. 
+
+--※ 이미 만들어져 있는 테이블에
+--   부여하려는 제약조건을 위반한 데이터가 포함되어 있을 경우
+--   해당 테이블에 제약조건을 추가하는 것은 불가능하다.
+
+-- 제약조건 추가
+ALTER TABLE TBL_TEST4 
+ADD CONSTRAINT TEST4_COL1_PK PRIMARY KEY(COL1);
+--==>> Table TBL_TEST4이(가) 변경되었습니다.
+
+
+SELECT UC.OWNER, UC.CONSTRAINT_NAME, UC.TABLE_NAME, UC.CONSTRAINT_TYPE
+     , UCC.COLUMN_NAME
+FROM USER_CONSTRAINTS UC, USER_CONS_COLUMNS UCC
+WHERE UC.CONSTRAINT_NAME = UCC.CONSTRAINT_NAME
+  AND UC.TABLE_NAME = 'TBL_TEST4';
+--==>> HR	TEST4_COL1_PK	TBL_TEST4	P	COL1
+
+--※ 제약조건 확인 전용 뷰(VIEW) 생성
+CREATE OR REPLACE VIEW VIEW_CONSTCHECK
+AS
+SELECT UC.OWNER "OWNER"
+     , UC.CONSTRAINT_NAME "CONSTRAINT_NAME"
+     , UC.TABLE_NAME "TABLE_NAME"
+     , UC.CONSTRAINT_TYPE "CONSTRAINT_TYPE"
+     , UCC.COLUMN_NAME "COLUMN_NAME"
+     , UC.SEARCH_CONDITION "SEARCH_CONDITION"
+     , UC.DELETE_RULE "DELETE_RULE"
+FROM USER_CONSTRAINTS UC JOIN USER_CONS_COLUMNS UCC
+ON UC.CONSTRAINT_NAME = UCC.CONSTRAINT_NAME;
+--==>> View VIEW_CONSTCHECK이(가) 생성되었습니다.
+
+--○ 생성된 뷰(VIEW)를 통한 제약조건 확인
+SELECT *
+FROM VIEW_CONSTCHECK
+WHERE TABLE_NAME='TBL_TEST4';
+--==>> HR	TEST4_COL1_PK	TBL_TEST4	P	COL1		
+
+--------------------------------------------------------------------------------
+-- 데이터가 많을수록 제약조건은 꼭 설정해야 한다.
+-- 사용자가 많이 찾게 될 컬럼이다 했을 때, 제약조건을 걸지 안 걸지에 대한 판단 적극적으로 해야 함
+
+--■■■ UNIQUE(UK:U) ■■■--
+-- PRIMARY KEY에서 NOT NULL 빼면 UNIQUE
+
+-- 1. 테이블에서 지정한 컬럼의 데이터가 중복되지 않고 유일할 수 있도록 설정하는 제약조건.
+--    PRIMARY KEY 와 유사한 제약조건이지만, NULL 을 허용한다는 차이점이 있다.  -- CHECK~!!
+--    내부적으로 PRIMARY KEY 와 마찬가지로 UNIQUE INDEX 가 자동 생성된다.
+--    하나의 테이블 내에서 UNIQUE 제약조건은 여러 번 설정하는 것이 가능하다.  -- CHECK~!!
+--    즉, 하나의 테이블에 UNIQUE 제약조건을 여러 개 만드는 것은 가능하다는 것이다.  -- CHECK~!!
+
+-- 2. 형식 및 구조
+-- ① 컬럼 레벨의 형식
+-- 컬럼명 데이터타입 [COPNSTRAINT CONSTRAINT명] UNIQUE
+
+-- ② 테이블 레벨의 형식
+-- 컬럼명 데이터타입,
+-- 컬럼명 데이터타입,
+-- CONSTRAINT CONSTRAINT명 UNIQUE(컬럼명, ...)
+
+--○ UK 지정 실습(① 컬럼 레벨의 형식)
+-- 테이블 생성
+CREATE TABLE TBL_TEST5
+( COL1 NUMBER(5)        PRIMARY KEY
+, COL2 VARCHAR2(30)     UNIQUE
+);
+--==>> Table TBL_TEST5이(가) 생성되었습니다.
+
+-- 제약조건 조회
+SELECT *
+FROM VIEW_CONSTCHECK -- 우리가 만든 뷰~
+WHERE TABLE_NAME = 'TBL_TEST5';
+--==>>
+/*
+HR	SYS_C007055	TBL_TEST5	P	COL1		
+HR	SYS_C007056	TBL_TEST5	U	COL2		
+*/
+
+-- 데이터 입력
+INSERT INTO TBL_TEST5(COL1, COL2) VALUES(1, 'TEST');
+INSERT INTO TBL_TEST5(COL1, COL2) VALUES(1, 'TEST'); --> 에러 발생
+INSERT INTO TBL_TEST5(COL1, COL2) VALUES(1, 'ABCD'); --> 에러 발생
+INSERT INTO TBL_TEST5(COL1, COL2) VALUES(2, 'ABCD'); 
+INSERT INTO TBL_TEST5(COL1, COL2) VALUES(3, NULL); 
+INSERT INTO TBL_TEST5(COL1) VALUES(4); 
+INSERT INTO TBL_TEST5(COL1, COL2) VALUES(5, 'ABCD'); --> 에러 발생
+
+COMMIT;
+--==>> 커밋 완료
+
+SELECT *
+FROM TBL_TEST5;
+--==>>
+/*
+1	TEST
+2	ABCD
+3	
+4	
+*/
+
+
+--○ UK 지정 실습(② 테이블 레벨의 형식)
+-- 테이블 생성
+CREATE TABLE TBL_TEST6
+( COL1 NUMBER(5)
+, COL2 VARCHAR(30)
+, CONSTRAINT TEST6_COL1_PK PRIMARY KEY(COL1)
+, CONSTRAINT TEST6_COL2_UK UNIQUE(COL2)
+);
+--==>> Table TBL_TEST6이(가) 생성되었습니다.
 
 
 
@@ -300,24 +810,6 @@ WHERE 회사ID = 10;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  
+  
+  
