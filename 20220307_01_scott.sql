@@ -2,6 +2,8 @@ SELECT USER
 FROM DUAL;
 --==>> SCOTT
 
+--------------------------------------------------------------------------------
+
 --■■■ UPDATE ■■■--
 
 -- 1. 테이블에서 기존 데이터를 수정(변경)하는 구문
@@ -10,6 +12,8 @@ FROM DUAL;
 -- UPDATE 테이블명
 -- SET 컬럼명=변경할값[, 컬럼명=변경할값, ...]
 -- [WHERE 조건절]
+
+--------------------------------------------------------------------------------
 
 SELECT *
 FROM TBL_SAWON;
@@ -120,6 +124,8 @@ FROM TBL_INSABACKUP;
 1060	김신애	810809-2111111	2001-10-10	서울	011-4151-4444	개발부	사원	900000	102000
 */
 
+--------------------------------------------------------------------------------
+
 --○ TBL_INSABACKUP 테이블에서
 --   직위가 과장과 부장만 수당 10% 인상
 UPDATE TBL_INSABACKUP
@@ -133,15 +139,20 @@ FROM TBL_INSABACKUP;
 COMMIT;
 --==>> 커밋 완료.
 
---○ TBL_INSABACKUP 테이블에서
+--------------------------------------------------------------------------------
+
+--○ TBL_INSABACKUP 테이블에서                                                  -- 문제
 --   전화번호가 016, 017, 018, 019 로 시작하는 전화번호인 경우
 --   이를 모두 010 으로 변경
-UPDATE TBL_INSABACKUP
+
+-- 내 풀이 ---------------------------------------------------------------------
+UPDATE TBL_INSABACKUP                                                           -- 내 풀이
 SET TEL = TRANSLATE(TEL, SUBSTR(TEL,1,3), '010')
 WHERE TEL LIKE '016%'
    OR TEL LIKE '017%'
    OR TEL LIKE '018%'
    OR TEL LIKE '019%';
+--==>> 24개 행 이(가) 업데이트되었습니다.
 
 SELECT *
 FROM TBL_INSABACKUP;
@@ -152,10 +163,27 @@ WHERE TEL LIKE '016%'
    OR TEL LIKE '017%'
    OR TEL LIKE '018%'
    OR TEL LIKE '019%';
+   
+COMMIT;
 
+-- 수업 풀이 -------------------------------------------------------------------
+SELECT *                                                                        -- 수업 풀이
+FROM TBL_INSABACKUP
+WHERE TEL IN ('016', '017', '018', '019');
+--==>> 조회 결과 없음
 
+SELECT TEL "기존전화번호", 010 || TEL "변경될전화번호"
+FROM TBL_INSABACKUP
+WHERE SUBSTR(TEL, 1, 3) IN ('016', '017', '018', '019');
+--==>> 원하는 결과가 아님
 
+SELECT TEL "기존전화번호", '010' || SUBSTR(TEL, 4) "변경될전화번호"
+FROM TBL_INSABACKUP
+WHERE SUBSTR(TEL, 1, 3) IN ('016', '017', '018', '019');
 
+UPDATE TBL_INSABACKUP
+SET TEL = '010' || SUBSTR(TEL, 4)
+WHERE SUBSTR(TEL, 1, 3) IN ('016', '017', '018', '019');
 
-
-
+SELECT *
+FROM TBL_INSABACKUP;
