@@ -1,0 +1,21 @@
+SELECT USER
+FROM DUAL;
+--==>> HR
+
+--○ EMPLOYEES 테이블의 직원들 SALARY 를 10% 인상한다.
+--   단, 부서명이 'IT' 인 직원들만 한정한다.
+--   (또한, 변경에 대한 결과 확인 후 ROLLBACK 수행한다~!!!)
+SELECT *
+FROM EMPLOYEES;
+
+SELECT *
+FROM DEPARTMENTS;
+
+SELECT *
+FROM EMPLOYEES E JOIN DEPARTMENTS D
+ON E.DEPARTMENT_ID = D.DEPARTMENT_ID;
+
+SELECT *
+FROM EMPLOYEES
+WHERE 부서명이 'IT';
+

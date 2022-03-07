@@ -813,18 +813,195 @@ HR	TEST12_COL2_NN	TBL_TEST12	C	COL2	COL2 IS NOT NULL
 HR	TEST12_COL1_PK	TBL_TEST12	P	COL1		
 */
 
+--○ NOT NULL 지정 실습(③ 테이블 생성 이후 제약조건 추가)
+--테이블 생성
+CREATE TABLE TBL_TEST13
+( COL1  NUMBER(5) 
+, COL2  VARCHAR2(30)
+);
+--==>> Table TBL_TEST13이(가) 생성되었습니다.
+
+-- 제약조건 확인
+SELECT *
+FROM VIEW_CONSTCHECK
+WHERE TABLE_NAME = 'TBL_TEST13';
+--==>> 조회 결과 없음
+
+-- 제약조건 추가
+ALTER TABLE TBL_TEST13
+ADD ( CONSTRAINT TEST13_COL1_PK PRIMARY KEY(COL1)
+    , CONSTRAINT TEST13_COL2_NN CHECK(COL2 IS NOT NULL) );
+--==>> Table TBL_TEST13이(가) 변경되었습니다.    
+
+-- 제약조건 확인
+SELECT *
+FROM VIEW_CONSTCHECK
+WHERE TABLE_NAME = 'TBL_TEST13';
+--==>>
+/*
+HR	TEST13_COL1_PK	TBL_TEST13	P	COL1		
+HR	TEST13_COL2_NN	TBL_TEST13	C	COL2	COL2 IS NOT NULL	
+*/
+
+--※ NOT NULL 제약조건만 TBL_TEST13 테이블의 COL2 에 추가하는 경우
+--   다음과 같은 방법을 사용하는 것도 가능하다.
+ALTER TABLE TBL_TEST13
+MODIFY COL2 NOT NULL;
+--==>> Table TBL_TEST13이(가) 변경되었습니다.   
+
+-- 컬럼 레벨에서 NOT NULL 제약조건을 지정한 테이블(TBL_TEST11)
+DESC TBL_TEST11;
+--==>>
+/*
+이름   널?       유형           
+---- -------- ------------ 
+COL1 NOT NULL NUMBER(5)    
+COL2 NOT NULL VARCHAR2(30)  --> NOT NULL 확인 됨
+*/
+
+-- 테이블 레벨에서 NOT NULL 제약조건을 지정한 테이블(TBL_TEST12)
+DESC TBL_TEST12;
+--==>>
+/*
+이름   널?       유형           
+---- -------- ------------ 
+COL1 NOT NULL NUMBER(5)    
+COL2          VARCHAR2(30)  --> NOT NULL 확인 안 됨
+*/
 
 
+-- 테이블 생성 이후 ADD를 통해 NOT NULL 제약조건을 추가하였으며
+-- 명기에 더하여, MODIFY 절을 통해 NOT NULL 제약조건을 추가한 테이블(TBL_TEST13)
+DESC TBL_TEST13;
+--==>>
+/*
+이름   널?       유형           
+---- -------- ------------ 
+COL1 NOT NULL NUMBER(5)    
+COL2 NOT NULL VARCHAR2(30)  --> NOT NULL 확인 됨
+*/
+
+SELECT *
+FROM VIEW_CONSTCHECK
+WHERE TABLE_NAME IN ('TBL_TEST11', 'TBL_TEST12', 'TBL_TEST13');
+--==>>
+/*
+HR	SYS_C007080	    TBL_TEST11	    C	COL2	"COL2" IS NOT NULL	
+HR	SYS_C007081	    TBL_TEST11	    P	COL1		
+HR	TEST12_COL2_NN	TBL_TEST12	    C	COL2	COL2 IS NOT NULL	
+HR	TEST12_COL1_PK	TBL_TEST12	    P	COL1		
+HR	TEST13_COL1_PK	TBL_TEST13	    P	COL1		                -- CHECK~!!
+HR	TEST13_COL2_NN	TBL_TEST13	    C	COL2	COL2 IS NOT NULL	-- CHECK~!!
+HR	SYS_C007086	T   BL_TEST13	    C	COL2	"COL2" IS NOT NULL	-- CHECK~!!
+*/
+
+--------------------------------------------------------------------------------
+
+--■■■ DEFAULT 표현식 ■■■--
+/*
+이걸 언제 봤냐면? 테이블 생성할 때
+CREATE TABLE...           
+
+, COL5 DATE DEFAULT SYSDATE   --> 이렇게 하면서 봤던 표현식
+*/
+
+-- 1. INSERT 와 UPDATE 문에서
+--    특정 값이 아닌 기본 값을 입력하도록 처리할 수 있다.
+
+-- 2. 형식 및 구조
+--    컬럼명 데이터타입 DEFAULT 기본값
+
+-- 3. INSERT 명령 시 해당 컬럼에 입력될 값을 할당하지 않거나,
+--    DEFAULT 키워드를 활용하여 기본으로 설정된 값을 입력하도록 할 수 있다.
+
+-- 4. DEFAULT 키워드와 다른 제약(NOT NULL 등) 표기가 함께 사용되어야 하는 경우
+--    DEFAULT 키워드를 먼저 표기(작성)할 것을 권장한다.
+
+--○ DEFAULT 표현식 적용실습
+-- 테이블 생성
+CREATE TABLE TBL_BBS                                -- 게시판 테이블 생성
+( SID           NUMBER          PRIMARY KEY         -- 게시물 번호 → 식별자 → 자동 증가
+, NAME          VARCHAR2(20)                        -- 게시물 작성자
+, CONTENTS      VARCHAR2(200)                       -- 게시물 내용
+, WRITEDAY      DATE            DEFAULT SYSDATE     -- 게시물 작성일  
+, COUNTS        NUMBER          DEFAULT 0           -- 게시물 조회수
+, COMMENTS      NUMBER          DEFAULT 0           -- 게시물 댓글 갯수
+);
+--==>> Table TBL_BBS이(가) 생성되었습니다.
+
+--※ SID 를 자동 증가 값으로 운영하려면 시퀀스 객체가 필요하다.
+--   자동으로 입력되는 컬럼은 사용자의 입력 항목에서 제외시킬 수 있다.
+
+-- 시퀀스 생성
+CREATE SEQUENCE SEQ_BBS
+NOCACHE;
+--==>> Sequence SEQ_BBS이(가) 생성되었습니다.
+
+-- 날짜 관련 세션 설정 변경
+ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS';
+--==>> Session이(가) 변경되었습니다.
 
 
+-- 게시물 작성
+INSERT INTO TBL_BBS(SID, NAME, CONTENTS, WRITEDAY, COUNTS, COMMENTS)
+VALUES(SEQ_BBS.NEXTVAL, '최문정', '오라클 DEFAULT 표현식을 실습중입니다.'
+     , TO_DATE('2022-02-01 15:34:10', 'YYYY-MM-DD HH24:MI:SS'), 0, 0);
+--==>> 1 행 이(가) 삽입되었습니다.
+
+INSERT INTO TBL_BBS(SID, NAME, CONTENTS, WRITEDAY, COUNTS, COMMENTS)
+VALUES(SEQ_BBS.NEXTVAL, '이호석', '계속 실습중입니다', SYSDATE, 0, 0);
+--==>> 1 행 이(가) 삽입되었습니다.
+
+INSERT INTO TBL_BBS(SID, NAME, CONTENTS, WRITEDAY, COUNTS, COMMENTS)
+VALUES(SEQ_BBS.NEXTVAL, '이연주', '열심히 실습중입니다', DEFAULT, 0, 0); -- 테이블 만들 때 디폴트를 SYSDATE로 해 놨음
+--==>> 1 행 이(가) 삽입되었습니다.
+
+INSERT INTO TBL_BBS(SID, NAME, CONTENTS, WRITEDAY, COUNTS, COMMENTS)
+VALUES(SEQ_BBS.NEXTVAL, '김태형', '열심히 실습중입니다', DEFAULT, DEFAULT, DEFAULT);
+--==>> 1 행 이(가) 삽입되었습니다.
+
+INSERT INTO TBL_BBS(SID, NAME, CONTENTS) -- 어차피 디폴트니까 빼 버리기 가능
+VALUES(SEQ_BBS.NEXTVAL, '김태형', '무진장 실습중입니다');
+--==>> 1 행 이(가) 삽입되었습니다.
 
 
+-- 확인
+SELECT *
+FROM TBL_BBS;
+--==>.
+/*
+1	최문정	오라클 DEFAULT 표현식을 실습중입니다.	2022-02-01 15:34:10	0	0
+2	이호석	계속 실습중입니다	                    2022-03-04 14:29:45	0	0
+3	이연주	열심히 실습중입니다	                    2022-03-04 14:30:32	0	0
+4	김태형	열심히 실습중입니다	                    2022-03-04 14:31:28	0	0
+5	김태형	무진장 실습중입니다	                    2022-03-04 14:32:34	0	0
+*/
 
+--○ DEFAULT 표현식 확인(조회)
+SELECT *
+FROM USER_TAB_COLUMNS
+WHERE TABLE_NAME = 'TBL_BBS';
+--==>>
+/*
+TBL_BBS	SID 	    NUMBER			22			N	1											
+TBL_BBS	NAME	    VARCHAR2			20			Y	2										
+TBL_BBS	CONTENTS	VARCHAR2			200			Y	3										
+TBL_BBS	WRITEDAY	DATE			7			Y	4	9	"SYSDATE" 
+TBL_BBS	COUNTS	    NUMBER			22			Y	5	2	"0"
+TBL_BBS	COMMENTS	NUMBER			22			Y	6	2	"0"
+*/      
 
+--○ 테이블 생성 이후 DEFAULT 표현식 추가 / 변경
+ALTER TABLE 테이블명
+MODIFY 컬럼명 [자료형] DEFAULT 기본값;
 
+-- 삭제는 어떻게 할까?
+-- 제약조건들은 이름이 있으나 얘는 이름이 없다...
+-- 그럼 어떻게 제거하느냐
 
+--○ 기존의 DEFAULT 표현식 제거
+ALTER TABLE 테이블명
+MODIFY 컬럼명 [자료형] DEFAULT NULL;
 
-
-
-
-
+COMMIT;
+--==>> 커밋 완료.
