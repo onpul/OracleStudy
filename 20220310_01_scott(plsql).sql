@@ -151,7 +151,7 @@ END;
 
 --------------------------------------------------------------------------------
 
---○ TBL_INSA 테이블에서 입사일을 기준으로 현재까지의
+--○ TBL_INSA 테이블에서 입사일을 기준으로 현재까지의                           -- 문제
 --   근무년수를 반환하는 함수를 정의한다.
 --   단, 근무년수는 소수점 이하 한자리까지 계산한다.
 --   함수명 : FN_WORKYEAR
@@ -320,8 +320,9 @@ END;
 --※ 프로시저 실습을 위한 테이블 생성은
 --   『20220310_02_scott.sql』 파일 참조~!!!
 
+--------------------------------------------------------------------------------
 
---○ 데이터 입력 시 특정 항목의 데이터만 입력하면
+--○ 데이터 입력 시 특정 항목의 데이터만 입력하면                               -- 문제
 --                  ---------
 --                  (학번, 이름, 국어점수, 영어점수, 수학점수)
 --   내부적으로 다른 추가항목에 대한 처리가 함께 이루어질 수 있도록 하는
@@ -330,19 +331,320 @@ END;
 --   프로시저를 작성한다.(생성한다.)
 --   프로시저 명 : PRC_SUNGJUK_INSERT()
 
+/*
+실행 예)
+EXEC PRC_SUNGJUK_INSERT(1, '최선하', 90, 80, 70);
+
+프로시저 호출로 처리된 결과
+학번 이름 국어점수 영어점수 수학점수 총점 평균 등급
+1   최선하   90      80        70    240   80   B
+*/
+
+-- 내 풀이 
+CREATE OR REPLACE PROCEDURE PRC_SUNGJUK_INSERT
+( V_HAKBUN  IN TBL_SUNGJUK.HAKBUN%TYPE
+, V_NAME    IN TBL_SUNGJUK.NAME%TYPE
+, V_KOR     IN TBL_SUNGJUK.KOR%TYPE
+, V_ENG     IN TBL_SUNGJUK.ENG%TYPE
+, V_MAT     IN TBL_SUNGJUK.MAT%TYPE
+--, V_TOT     IN TBL_SUNGJUK.TOT%TYPE
+--, V_AVG     IN TBL_SUNGJUK.AVG%TYPE
+--, V_GRADE   IN TBL_SUNGJUK.GRADE%TYPE
+)
+IS
+    V_TOT     TBL_SUNGJUK.TOT%TYPE;
+    V_AVG     TBL_SUNGJUK.AVG%TYPE;
+    V_GRADE   TBL_SUNGJUK.GRADE%TYPE;
+BEGIN
+    
+    V_TOT := V_KOR + V_ENG + V_MAT;
+    V_AVG := (V_TOT) / 3;
+    
+    V_GRADE := 
+    CASE TRUNC(V_AVG, -1)
+        WHEN 100 THEN 'A'
+        WHEN 90 THEN 'A'
+        WHEN 80 THEN 'B'
+        WHEN 70 THEN 'C'
+        WHEN 60 THEN 'D'
+        ELSE 'F'
+    END; -- END CASE 아님
+    
+    INSERT INTO TBL_SUNGJUK(HAKBUN, NAME, KOR, ENG, MAT, TOT, AVG, GRADE)
+    VALUES(V_HAKBUN, V_NAME, V_KOR, V_ENG, V_MAT, V_TOT, V_AVG, V_GRADE);  
+
+END;
+
+-- 수업 풀이
+CREATE OR REPLACE PROCEDURE PRC_SUNGJUK_INSERT
+( 학번
+, 성명
+, 국어점수
+, 영어점수
+, 수학점수
+)
+IS
+BEGIN
+END;
+
+CREATE OR REPLACE PROCEDURE PRC_SUNGJUK_INSERT
+( V_HAKBUN  IN TBL_SUNGJUK.HAKBUN%TYPE
+, V_NAME    IN TBL_SUNGJUK.NAME%TYPE
+, V_KOR     IN TBL_SUNGJUK.KOR%TYPE
+, V_ENG     IN TBL_SUNGJUK.ENG%TYPE
+, V_MAT     IN TBL_SUNGJUK.MAT%TYPE
+)
+IS
+BEGIN
+END;
 
 
+CREATE OR REPLACE PROCEDURE PRC_SUNGJUK_INSERT
+( V_HAKBUN  IN TBL_SUNGJUK.HAKBUN%TYPE
+, V_NAME    IN TBL_SUNGJUK.NAME%TYPE
+, V_KOR     IN TBL_SUNGJUK.KOR%TYPE
+, V_ENG     IN TBL_SUNGJUK.ENG%TYPE
+, V_MAT     IN TBL_SUNGJUK.MAT%TYPE
+)
+IS
+    -- 선언부
+    -- INSERT 쿼리문 수행을 하기 위해 필요한 추가 변수 구성
+    V_TOT   TBL_SUNGJUK.TOT%TYPE;
+    V_AVG   TBL_SUNGJUK.AVG%TYPE;   
+    V_GRADE TBL_SUNGJUK.GRADE%TYPE;
+BEGIN
+    -- 실행부
+    -- 추가로 선언한 주요 변수들에 값을 담아내야 한다.
+    V_TOT := V_KOR + V_ENG + V_MAT;
+    V_AVG := (V_TOT) / 3;
+    
+    IF  (V_AVG >= 90) -- 조건문 가급적이면 괄호 만들어 주세요
+        THEN V_GRADE := 'A';
+    ELSIF (V_AVG >= 80)
+        THEN V_GRADE := 'B';
+    ELSIF (V_AVG >= 70)
+        THEN V_GRADE := 'C';
+    ELSIF (V_GRADE >= 60)
+        THEN V_GRADE := 'D';
+    ELSE
+        V_GRADE := 'F';
+    END IF;
+    
+    -- INSERT 쿼리문 수행
+    INSERT INTO TBL_SUNGJUK(HAKBUN, NAME, KOR, ENG, MAT, TOT, AVG, GRADE)
+    VALUES(V_HAKBUN, V_NAME, V_KOR, V_ENG, V_MAT, V_TOT, V_AVG, V_GRADE); 
+    
+    -- 커밋
+    COMMIT;
+END;
+--==>> Procedure PRC_SUNGJUK_INSERT이(가) 컴파일되었습니다.
+
+--------------------------------------------------------------------------------
+
+--○ TBL_SUNGJUK 테이블에서 특정 학생의 점수                                    -- 문제
+--   (학번, 국어점수, 영어점수, 수학점수) 데이터 수정 시
+--   총점, 평균, 등급까지 함께 수정되는 프로시저를 생성한다.
+--   프로시저 명 : PRC_SUNGJUK_UPDATE()
+
+/*
+실행 예)
+EXEC PRC_SUNGJUK_UPDATE(2, 50, 50, 50);
+
+프로시저 호출로 처리된 결과
+학번 이름 국어점수 영어점수 수학점수 총점 평균 등급
+1   최선하   90      80        70    240   80   B
+2   박현수   50      50        50    150   50   F
+*/
+
+-- 내 풀이
+CREATE OR REPLACE PROCEDURE PRC_SUNGJUK_UPDATE
+( V_HAKBUN  IN TBL_SUNGJUK.HAKBUN%TYPE
+, V_KOR     IN TBL_SUNGJUK.KOR%TYPE
+, V_ENG     IN TBL_SUNGJUK.ENG%TYPE
+, V_MAT     IN TBL_SUNGJUK.MAT%TYPE
+)
+IS
+    -- 선언부
+    -- INSERT 쿼리문 수행을 하기 위해 필요한 추가 변수 구성
+    --V_NAME  TBL_SUNGJUK.NAME%TYPE
+    V_TOT   TBL_SUNGJUK.TOT%TYPE;
+    V_AVG   TBL_SUNGJUK.AVG%TYPE;   
+    V_GRADE TBL_SUNGJUK.GRADE%TYPE;
+BEGIN
+    -- 실행부
+    -- 추가로 선언한 주요 변수들에 값을 담아내야 한다.
+    V_TOT := V_KOR + V_ENG + V_MAT;
+    V_AVG := (V_TOT) / 3;
+    
+    IF  (V_AVG >= 90) -- 조건문 가급적이면 괄호 만들어 주세요
+        THEN V_GRADE := 'A';
+    ELSIF (V_AVG >= 80)
+        THEN V_GRADE := 'B';
+    ELSIF (V_AVG >= 70)
+        THEN V_GRADE := 'C';
+    ELSIF (V_GRADE >= 60)
+        THEN V_GRADE := 'D';
+    ELSE
+        V_GRADE := 'F';
+    END IF;
+    
+    -- 업데이트
+    UPDATE TBL_SUNGJUK
+    SET KOR = V_KOR, ENG = V_ENG, MAT = V_MAT, TOT = V_TOT, AVG = V_AVG, GRADE = V_GRADE
+    WHERE HAKBUN = V_HAKBUN;
+    
+    -- 커밋
+    COMMIT;
+END;
+
+-- 수업 풀이
+CREATE OR REPLACE PROCEDURE PRC_SUNGJUK_UPDATE
+( 학번
+, 국어점수
+, 영어점수
+, 수학점수
+)
+IS
+BEGIN
+END;
+
+CREATE OR REPLACE PROCEDURE PRC_SUNGJUK_UPDATE
+( V_HAKBUN  IN TBL_SUNGJUK.HAKBUN%TYPE
+, V_KOR     IN TBL_SUNGJUK.KOR%TYPE
+, V_ENG     IN TBL_SUNGJUK.ENG%TYPE
+, V_MAT     IN TBL_SUNGJUK.MAT%TYPE
+)
+IS
+    -- 선언부
+    -- UPDATE 쿼리문을 수행하기 위해 필요한 변수
+    V_TOT   TBL_SUNGJUK.TOT%TYPE;
+    V_AVG   TBL_SUNGJUK.AVG%TYPE;   
+    V_GRADE TBL_SUNGJUK.GRADE%TYPE;
+BEGIN
+    -- 실헹부
+     -- 추가로 선언한 주요 변수들에 값을 담아내야 한다.
+    V_TOT := V_KOR + V_ENG + V_MAT;
+    V_AVG := (V_TOT) / 3;
+    
+    IF  (V_AVG >= 90) -- 조건문 가급적이면 괄호 만들어 주세요
+        THEN V_GRADE := 'A';
+    ELSIF (V_AVG >= 80)
+        THEN V_GRADE := 'B';
+    ELSIF (V_AVG >= 70)
+        THEN V_GRADE := 'C';
+    ELSIF (V_GRADE >= 60)
+        THEN V_GRADE := 'D';
+    ELSE
+        V_GRADE := 'F';
+    END IF;
+    
+    -- UPDATE 쿼리문 수행
+    UPDATE TBL_SUNGJUK
+    SET KOR = V_KOR, ENG = V_ENG, MAT = V_MAT
+      , TOT = V_TOT, AVG = V_AVG, GRADE = V_GRADE
+    WHERE HAKBUN = V_HAKBUN;
+    
+    -- 커밋
+    COMMIT;
+END;
+--==>> Procedure PRC_SUNGJUK_UPDATE이(가) 컴파일되었습니다.
 
 
+--○ TBL_STUDENTS 테이블에서 전화번호와 주소 데이터를 수정하는(변경하는)
+--   프로시저를 작성한다.
+--   단, ID 와 PW 가 일치하는 경우에만 수정을 진행할 수 있도록 처리한다.
+--   프로시저 명 : PRC_STUDENTS_UPDATE()
 
+/*
+실행 예)
+EXEC PRC_STUDENTS_UPDATE('happy', 'java006', '010-9999-9999', '강원도 횡성');
+--==>> 데이터 수정 Ⅹ
 
+EXEC PRC_STUDENTS_UPDATE('happy', 'java006$', '010-9999-9999', '강원도 횡성');
+--==>> 데이터 수정 ○
+*/
 
+CREATE OR REPLACE PROCEDURE PRC_STUDENTS_UPDATE
+( V_ID      IN TBL_IDPW.ID%TYPE     
+, V_PW      IN TBL_IDPW.PW%TYPE
+--, V_NAME    IN TBL_STUDENTS.NAME%TYPE
+, V_TEL     IN TBL_STUDENTS.TEL%TYPE
+, V_ADDR    IN TBL_STUDENTS.ADDR%TYPE
+)
+IS     
+BEGIN
+    
+    -- UPDATE 쿼리문 수행
+    UPDATE TBL_STUDENTS
+    SET TEL = V_TEL, ADDR = V_ADDR
+    WHERE ID = V_ID AND 
+              ( SELECT PW
+                FROM TBL_IDPW
+                WHERE ID = V_ID ) = V_PW;
+    
+    -- 커밋
+    COMMIT;
+    
+END;
+--==>> Procedure PRC_STUDENTS_UPDATE이(가) 컴파일되었습니다.
 
+-- 수업 풀이
+CREATE OR REPLACE PROCEDURE PRC_STUDENTS_UPDATE
+( 아이디
+, 패스워드
+, 전화번호
+, 주소
+)
+IS 
+BEGIN
+END;
 
+-- 방법 1.
+CREATE OR REPLACE PROCEDURE PRC_STUDENTS_UPDATE
+( V_ID      IN TBL_IDPW.ID%TYPE     
+, V_PW      IN TBL_IDPW.PW%TYPE
+, V_TEL     IN TBL_STUDENTS.TEL%TYPE
+, V_ADDR    IN TBL_STUDENTS.ADDR%TYPE
+)
+IS 
+    V_PW2 TBL_IDPW.PW%TYPE;
+    V_FLAG NUMBER := 0;
+BEGIN
+    SELECT PW INTO V_PW2
+    FROM TBL_IDPW
+    WHERE ID = V_ID;
+    
+    IF (V_PW = V_PW2)
+        THEN V_FLAG := 1;
+    ELSE
+        V_FLAG = 2;
+    END IF;
+    
+    UPDATE TBL_STUDENTS
+    SET TEL = V_TEL, ADDR = V_ADDR
+    WHERE ID = V_ID
+      AND V_FLAG = 1;
+      
+    COMMIT;
+    
+END;
 
-
-
-
-
-
-
+-- 방법 2.
+CREATE OR REPLACE PROCEDURE PRC_STUDENTS_UPDATE
+( V_ID      IN TBL_IDPW.ID%TYPE     
+, V_PW      IN TBL_IDPW.PW%TYPE
+, V_TEL     IN TBL_STUDENTS.TEL%TYPE
+, V_ADDR    IN TBL_STUDENTS.ADDR%TYPE
+)
+IS 
+BEGIN
+    UPDATE (SELECT T1.ID, T1.PW, T2.TEL, T2.ADDR
+            FROM TBL_IDPW T1 JOIN TBL_STUDENTS T2
+            ON T1.ID = T2.ID) T
+    SET T.TEL = V_TEL, T.ADDR = V_ADDR
+    WHERE T.ID = V_ID
+      AND T.PW = V_PW;
+      
+    COMMIT;
+END;
+--==>> Procedure PRC_STUDENTS_UPDATE이(가) 컴파일되었습니다.

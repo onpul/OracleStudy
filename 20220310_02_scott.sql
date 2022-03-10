@@ -279,6 +279,7 @@ happy	이시우	010-1111-1111	제주도 서귀포시
 rainbow	김정용	010-2222-2222	서울 강남구
 */
 
+--------------------------------------------------------------------------------
 
 --○ 실습 테이블 생성(TBL_SUNGJUK)
 CREATE TABLE TBL_SUNGJUK
@@ -332,21 +333,96 @@ GRADE           CHAR(1)
 */
 
 
+--○ 프로시저 생성 후 실행
+EXEC PRC_SUNGJUK_INSERT(1, '최선하', 90, 80, 70);
+--==>> PL/SQL 프로시저가 성공적으로 완료되었습니다.
+
+--○ 프로시저 호출 이후 테이블 조회
+SELECT *
+FROM TBL_SUNGJUK;
+--==>> 1	최선하	90	80	70	240	80	B
 
 
+---
 
 
+--○ 프로시저 생성 후 실행
+EXEC PRC_SUNGJUK_INSERT(2, '박현수', 87, 97, 67);
+--==>> PL/SQL 프로시저가 성공적으로 완료되었습니다.
+
+--○ 프로시저 호출 이후 테이블 조회
+SELECT *
+FROM TBL_SUNGJUK;
+--==>> 
+/*
+1	최선하	90	80	70	240	80	    B
+2	박현수	87	97	67	251	83.7	B
+*/
 
 
+---
 
 
+--○ 프로시저 생성 후 실행
+EXEC PRC_SUNGJUK_UPDATE(2, 50, 50, 50);
+--==>> PL/SQL 프로시저가 성공적으로 완료되었습니다.
 
 
+--○ 프로시저 호출 이후 테이블 조회
+SELECT *
+FROM TBL_SUNGJUK;
+--==??
+/*
+1	최선하	90	80	70	240	80	B
+2	박현수	50	50	50	150	50	F
+*/
+
+--○ TBL_STUDENTS 테이블 조회
+SELECT *
+FROM TBL_STUDENTS;
+--==>>
+/*
+happy	이시우	010-1111-1111	제주도 서귀포시
+rainbow	김정용	010-2222-2222	서울 강남구
+*/
+
+--○ TBL_IDPW 테이블 조회
+SELECT *
+FROM TBL_IDPW;
+--==>>
+/*
+happy	java006$
+rainbow	java006$
+*/
 
 
+---
 
 
+--○ 프로시저 생성 후 실행
+EXEC PRC_STUDENTS_UPDATE('happy', 'java006', '010-9999-9999', '강원도 횡성');
+--==>> 데이터 수정 Ⅹ
+--==>> PL/SQL 프로시저가 성공적으로 완료되었습니다.
+
+--○ TBL_STUDENTS 테이블 조회
+SELECT *
+FROM TBL_STUDENTS;
+--==>>
+/*
+happy	이시우	010-9999-9999	제주도 서귀포시
+rainbow	김정용	010-2222-2222	서울 강남구
+*/
 
 
+EXEC PRC_STUDENTS_UPDATE('happy', 'java006$', '010-9999-9999', '강원도 횡성');
+--==>> 데이터 수정 ○
+--==>> PL/SQL 프로시저가 성공적으로 완료되었습니다.
 
-
+--○ TBL_STUDENTS 테이블 조회
+SELECT *
+FROM TBL_STUDENTS;
+--==>>
+/*
+happy	이시우	010-9999-9999	강원도 횡성
+rainbow	김정용	010-2222-2222	서울 강남구
+*/
