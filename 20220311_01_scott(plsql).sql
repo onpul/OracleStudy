@@ -296,4 +296,94 @@ BEGIN
     COMMIT;
             
 END;
+
+-- 수업 풀이
+CREATE OR REPLACE PROCEDURE PRC_출고_INSERT
+( V_상품코드     IN TBL_상품.상품코드%TYPE
+, V_출고수량     IN TBL_출고.출고수량%TYPE
+, V_출고단가     IN TBL_출고.출고단가%TYPE
+)
+IS
+    -- 주요 변수 선언
+    V_재고수량  TBL_상품.재고수량%TYPE;
+    V_출고번호  TBL_출고.출고번호%TYPE;
+    
+    -- 사용자 정의 예외 선언
+    USER_DEFINE_ERROR EXCEPTION;
+BEGIN
+    --쿼리문 수행 이전에 수행 여부를 확인하는 과정에서
+    --재고 파악 → 기존 재고를 확인하는 과정이 선행되어야 한다.
+    --그래야 프로시저 호출 시, 넘겨받는 출고수량과 비교가 가능하기 때문...
+    SELECT 재고수량 INTO V_재고수량
+    FROM TBL_상품
+    WHERE 상품코드 = V_상품코드;
+    
+    -- 출고를 정상적으로 진행해 줄 것인지에 대한 여부 확인
+    -- 위에서 파악한 재고수량보다 현재 프로시저에서 넘겨받은 출고수량이 많으면
+    -- 예외발생~!!!!
+    IF (V_출고수량 > V_재고수량)
+        -- 예외 발생
+        THEN RAISE USER_DEFINE_ERROR;
+    END IF;
+    
+    -- 출고번호에 값 담아내기(편한대로 위에서 작성하면 리소스 낭비!)
+    -- PL/SQL 에서는 코드의 순서 중요하다!
+    -- 출고번호 얻어내기 → 위에서 선언한 변수에 값 담아내기
+    SELECT NVL(MAX(출고번호),0) + 1 INTO V_출고번호
+    FROM TBL_출고;
+    
+    --쿼리문 구성 → INSERT(TBL_출고)
+    INSERT INTO TBL_출고(출고번호, 상품코드, 출고수량, 출고단가)
+    VALUES(V_출고번호, V_상품코드, V_출고수량, V_출고단가);
+    
+    --쿼리문 구성 → UPDATE(TBL_상품)
+    UPDATE TBL_상품
+    SET 재고수량 = 재고수량 - V_출고수량
+    WHERE 상품코드 = V_상품코드;
+    
+    -- 예외처리
+    EXCEPTION
+        WHEN USER_DEFINE_ERROR
+            THEN RAISE_APPLICATION_ERROR(-20002,'재고 부족 ~!!!');
+        WHEN OTHERS
+            THEN ROLLBACK;
+            
+    -- 커밋
+    COMMIT;
+    
+END;
+--==>> Procedure PRC_출고_INSERT이(가) 컴파일되었습니다.
+
+
+--○ TBL_출고 테이블에서 출고수량을 수정(변경)하는 프로시저를 작성한다.
+--   프로시저 명 : PRC_출고_UPDATE()
+/*
+실행 예)
+EXEC PRC_출고_UPDATE(출고번호, 변경할수량);
+*/
+
+CREATE OR REPLACE PROCEDURE PRC_출고_UPDATE
+( V_출고번호
+, V_변경수량
+)
+IS
+BEGIN
+    -- 변경할 수량이 재고수량 보다 많으면 실행될 수 없도록
+    
+    
+END;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
             
