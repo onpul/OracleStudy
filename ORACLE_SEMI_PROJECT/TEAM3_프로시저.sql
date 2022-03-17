@@ -1,30 +1,4 @@
-SELECT USER
-FROM DUAL;
---==>> TEAM3
-
--- 프로시저 생성 권한 부여(SYS 계정에서)
-GRANT CREATE PROCEDURE TO TEAM3;
---==>> Grant을(를) 성공했습니다.
-
--- 테스트 용 데이터 입력(테스트 후 삭제 완료)
-SELECT * --DELETE
-FROM ADMIN;
-
-INSERT INTO ADMIN(ADMIN_ID, ADMIN_NAME, SSN, PASSWORD, REGIST_DATE)
-VALUES('1234', 'TEST1', '123456-1234567', '1234567', SYSDATE);
-
--- 환경변수 설정
-SET SERVEROUTPUT ON;
-
--- 프로시저 테스트
-EXEC PRC_LOGIN_ADMIN('0000', '1234567');
---==>> TEST1 관리자님 어서오세요. 
-
---------------------------------------------------------------------------------
-
---■■■ 로그인 프로시저 ■■■--
-
--- 로그인 프로시저 (관리자)
+-- ■■■ 관리자 로그인 프로시저 ■■■
 CREATE OR REPLACE PROCEDURE PRC_LOGIN_ADMIN
 ( V_ID  IN ADMIN.ADMIN_ID%TYPE
 , V_PW  IN ADMIN.PASSWORD%TYPE
@@ -74,8 +48,9 @@ BEGIN
             THEN RAISE_APPLICATION_ERROR(-20002, '아이디 또는 비밀번호가 일치하지 않습니다.');
 END;
 
+--------------------------------------------------------------------------------
 
--- 로그인 프로시저 (교수)
+-- ■■■ 교수자 로그인 프로시저 ■■■
 CREATE OR REPLACE PROCEDURE PRC_LOGIN_PROF
 ( V_ID  IN PROF.PROF_ID%TYPE
 , V_PW  IN PROF.PASSWORD%TYPE
@@ -125,8 +100,9 @@ BEGIN
             THEN RAISE_APPLICATION_ERROR(-20002, '아이디 또는 비밀번호가 일치하지 않습니다.');
 END;
 
+--------------------------------------------------------------------------------
 
--- 로그인 프로시저 (학생)
+-- ■■■ 학생 로그인 프로시저 ■■■
 CREATE OR REPLACE PROCEDURE PRC_LOGIN_STU
 ( V_ID  IN STU.STU_ID%TYPE
 , V_PW  IN STU.PASSWORD%TYPE
@@ -178,15 +154,92 @@ END;
 
 --------------------------------------------------------------------------------
 
---■■■ 중도 탈락 정보 입력 프로시저 ■■■--
+--■■■ 시퀀스 초기화 프로시저 ■■■
+CREATE OR REPLACE PROCEDURE PRC_RESET_SEQ
+( V_SEQ_NAME IN VARCHAR2 )
+IS
+    V_SEQ_VAL NUMBER;
+BEGIN
+    -- 다음시퀀스 값을 SEQ_VAL 변수에 저장
+    EXECUTE IMMEDIATE 'SELECT ' || V_SEQ_NAME || '.NEXTVAL FROM DUAL' INTO V_SEQ_VAL;
+
+    -- 현재의 시퀀스에서 저장된 값(SEQ_VAL)을 빼준다. 그럼 0으로 초기화 됨.
+    EXECUTE IMMEDIATE 'ALTER SEQUENCE ' || V_SEQ_NAME || ' INCREMENT BY -' || V_SEQ_VAL || ' MINVALUE 0';
+
+    -- 0으로 초기화 된 시퀀스 값을 확인
+    EXECUTE IMMEDIATE 'SELECT ' || V_SEQ_NAME || '.NEXTVAL FROM DUAL' INTO V_SEQ_VAL;
+
+    -- 지금부터는 1씩 증가되도록 시퀀스를 변경함.
+    EXECUTE IMMEDIATE 'ALTER SEQUENCE ' || V_SEQ_NAME || ' INCREMENT BY 1 MINVALUE 0';
+END PRC_RESET_SEQ;
+--==>> Procedure PRC_RESET_SEQ이(가) 컴파일되었습니다.
+
+--■■■ 중도 탈락 사유 입력 프로시저 ■■■--
 CREATE OR REPLACE PROCEDURE PRC_REASONS_DROPOUT_INSERT
-( V_REASONS_DROPOUT_ID  IN REASONS_DROPOUT.REASONS_DROPOUT_ID%TYPE
-, V_REASON_DROPOUT      IN REASONS_DROPOUT.REASON_DROPOUT%TYPE
+(V_REASON_DROPOUT   IN REASONS_DROPOUT.REASON_DROPOUT%TYPE)
+IS
+    COUNTNUM    NUMBER;
+BEGIN
+    
+    SELECT COUNT(*) INTO COUNTNUM
+    FROM REASONS_DROPOUT;
+    
+    -- 첫 레코드 입력이면 시퀀스 초기화
+    IF (COUNTNUM = 0)
+        THEN PRC_RESET_SEQ('SEQ_REASONS_DROPOUT');
+    END IF;
+    
+    INSERT INTO REASONS_DROPOUT(REASONS_DROPOUT_ID, REASON_DROPOUT)
+    VALUES(CONCAT('DR', TO_CHAR(LPAD(SEQ_REASONS_DROPOUT.NEXTVAL, 3, 0))), V_REASON_DROPOUT);  
+    
+    COMMIT;
+END;
+--==>> Procedure PRC_REASONS_DROPOUT_INSERT이(가) 컴파일되었습니다.
+
+--------------------------------------------------------------------------------
+
+--■■■ 중도 탈락 사유 수정 프로시저 ■■■--
+CREATE OR REPLACE PROCEDURE PRC_REASONS_DROPOUT_UPDATE
+( V_REASONS_DROPOUT_ID IN REASONS_DROPOUT.REASONS_DROPOUT_ID%TYPE
+, V_REASON_DROPOUT    IN REASONS_DROPOUT.REASON_DROPOUT%TYPE
 )
 IS
 BEGIN
+    UPDATE REASONS_DROPOUT
+    SET REASON_DROPOUT = V_REASON_DROPOUT
+    WHERE REASONS_DROPOUT_ID = V_REASONS_DROPOUT_ID;
+    
+    COMMIT;
 END;
+--==>> Procedure PRC_REASONS_DROPOUT_UPDATE이(가) 컴파일되었습니다.
 
+--------------------------------------------------------------------------------
 
+--■■■ 중도 탈락 사유 삭제 프로시저 ■■■--
+CREATE OR REPLACE PROCEDURE PRC_REASONS_DROPOUT_DELETE
+( V_REASONS_DROPOUT_ID IN REASONS_DROPOUT.REASONS_DROPOUT_ID%TYPE )
+IS
+BEGIN
+    DELETE
+    FROM REASONS_DROPOUT
+    WHERE REASONS_DROPOUT_ID = V_REASONS_DROPOUT_ID;
+    
+    COMMIT;
+END;
+--==>> Procedure PRC_REASONS_DROPOUT_DELETE이(가) 컴파일되었습니다.
 
+--------------------------------------------------------------------------------
 
+EXEC PRC_REASONS_DROPOUT_INSERT ('집안사정');
+EXEC PRC_REASONS_DROPOUT_INSERT ('조기취업');
+EXEC PRC_REASONS_DROPOUT_INSERT ('진로변경');
+EXEC PRC_REASONS_DROPOUT_INSERT ('건강악화');
+
+EXEC PRC_REASONS_DROPOUT_DELETE ('DR001');
+EXEC PRC_REASONS_DROPOUT_DELETE ('DR002');
+EXEC PRC_REASONS_DROPOUT_DELETE ('DR003');
+EXEC PRC_REASONS_DROPOUT_DELETE ('DR004');
+
+SELECT *
+FROM REASONS_DROPOUT
+ORDER BY REASONS_DROPOUT_ID;
