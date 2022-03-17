@@ -176,7 +176,16 @@ BEGIN
             THEN RAISE_APPLICATION_ERROR(-20002, '아이디 또는 비밀번호가 일치하지 않습니다.');
 END;
 
+--------------------------------------------------------------------------------
 
+--■■■ 중도 탈락 정보 입력 프로시저 ■■■--
+CREATE OR REPLACE PROCEDURE PRC_REASONS_DROPOUT_INSERT
+( V_REASONS_DROPOUT_ID  IN REASONS_DROPOUT.REASONS_DROPOUT_ID%TYPE
+, V_REASON_DROPOUT      IN REASONS_DROPOUT.REASON_DROPOUT%TYPE
+)
+IS
+BEGIN
+END;
 
 
 
