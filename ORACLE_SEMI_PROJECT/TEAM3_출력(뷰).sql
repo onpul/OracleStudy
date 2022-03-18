@@ -1,7 +1,7 @@
 -- TEAM3 출력(뷰)
 
 /*
-■■■ 관리자 측 요구분석(관리자) - 3.교수자 계정 관리 기능 구현 ■■■
+■■■ ① 관리자 측 요구분석(관리자) - 교수자 계정 관리 기능 구현 ■■■
 교수자 명, 배정된 과목명, 과목 기간(시작 연월일, 끝 연월일), 교재 명, 강의실, 강의 진행 여부(강의 예정, 강의 중, 강의 종료)
 */
 
@@ -33,7 +33,7 @@ FROM VIEW_PROFESSORS;
 --------------------------------------------------------------------------------
 
 /*
-■■■ 관리자 측 요구분석(관리자) - 4.과정 관리 기능 구현 ■■■
+■■■ ② 관리자 측 요구분석(관리자) - 과정 관리 기능 구현 ■■■
 과정명, 강의실, 과목명, 과목 기간(시작 연월일, 끝 연월일), 교재 명, 교수자 명
 */
 
@@ -66,8 +66,8 @@ FROM VIEW_COURSES;
 --------------------------------------------------------------------------------
 
 /*
-■■■ 관리자 측 요구분석(관리자) - 5.과목 관리 기능 구현 ■■■
-과정명, 강의실, 과목명, 과목 기간(시작 연월일, 끝 연월일), 교재 명, 교수자 명
+■■■ ③ 관리자 측 요구분석(관리자) - 과목 관리 기능 구현 ■■■
+학생 이름, 과정명, 수강과목, 수강과목 총점 (+ 중도 탈락 제외 사실)
 */
 
 CREATE OR REPLACE VIEW VIEW_STUDENTS
@@ -96,7 +96,7 @@ FROM VIEW_STUDENTS;
 --------------------------------------------------------------------------------
 
 /*
-■■■ 사용자 측 요구분석(교수자) - 3.성적 출력 기능 구현 ■■■
+■■■ ④ 사용자 측 요구분석(교수자) - 성적 출력 기능 구현 ■■■ 
 과목명, 과목 기간(시작 연월일, 끝 연월일), 교재 명, 학생 명, 출결, 실기, 필기, 총점, 등수 
 */
 
@@ -129,9 +129,9 @@ FROM
         JOIN STU S
         ON A.STU_ID = S.STU_ID
         JOIN SCORE SC
-        ON A.APP_ID = SC.APP_ID
+        ON OS.OPEN_SUBJ_ID = SC.OPEN_SUBJ_ID AND SC.APP_ID = A.APP_ID
         LEFT JOIN DROPOUT DR
-        ON A.APP_ID = DR.APP_ID
+        ON A.APP_ID = DR.APP_ID 
 ) T;
 
 SELECT *
@@ -140,12 +140,13 @@ FROM VIEW_PROFESSOR_GRADE;
 --------------------------------------------------------------------------------
 
 /*
-■■■ 사용자 측 요구분석(학생) - 2.성적 출력 기능 구현 ■■■
+■■■ ⑤ 사용자 측 요구분석(학생) - 성적 출력 기능 구현 ■■■
 학생 이름, 과정명, 과목명, 교육 기간(시작 연월일, 끝 연월일), 교재 명, 출결, 실기, 필기, 총점, 등수 
 */
 
-CREATE OR REPLACE VIEW VIEW_STUDENT_GRADE
-AS SELECT T1.학생이름
+CREATE OR REPLACE VIEW VIEW_STUDENT_GRADE  
+AS 
+SELECT T1.학생이름
     , T1.과정명
     , T1.과목명
     , T1.과목시작일
@@ -163,10 +164,11 @@ FROM(
     , OS.START_DATE 과목시작일
     , OS.END_DATE 과목종료일
     , B.BOOK_NAME 교재명
-    , SC.ATTEND_SCORE 출결성적
-    , SC.WRITE_SCORE 필기성적
-    , SC.PRACTICE_SCORE 실기성적
-    , SC.ATTEND_SCORE + SC.WRITE_SCORE + SC.PRACTICE_SCORE 총점
+    , NVL(SC.ATTEND_SCORE * OS.ATTEND_POINT, 0) / 100 출결성적
+    , NVL(SC.PRACTICE_SCORE * OS.PRACTICE_POINT, 0) / 100 실기성적
+    , NVL(SC.WRITE_SCORE * OS.WRITE_POINT, 0) / 100 필기성적 
+    , NVL(SC.ATTEND_SCORE * OS.ATTEND_POINT, 0) / 100 + NVL(SC.PRACTICE_SCORE * OS.PRACTICE_POINT, 0) / 100 
+    + NVL(SC.WRITE_SCORE * OS.WRITE_POINT, 0) / 100 "총점"
     , S.STU_ID 학생코드
     ,SUB.SUBJECT_ID 과목코드
     , RANK() OVER(PARTITION BY OS.SUBJECT_ID ORDER BY SC.ATTEND_SCORE + SC.WRITE_SCORE + SC.PRACTICE_SCORE DESC) 등수
@@ -176,8 +178,9 @@ FROM(
     AND OS.OPEN_COUR_ID = OC.OPEN_COUR_ID
     AND OS.SUBJECT_ID = SUB.SUBJECT_ID
     AND OS.BOOK_ID = B.BOOK_ID
-    AND SC.APP_ID = A.APP_ID) T1      
-WHERE T1.학생코드 = '1';
+    AND SC.APP_ID = A.APP_ID
+    AND OS.OPEN_SUBJ_ID = SC.OPEN_SUBJ_ID) T1;   
 
 SELECT *
-FROM VIEW_PROFESSOR_GRADE;
+FROM VIEW_STUDENT_GRADE
+WHERE 학생이름 = '최문정';

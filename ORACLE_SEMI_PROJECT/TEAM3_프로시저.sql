@@ -612,27 +612,55 @@ BEGIN
     WHERE SUBJECT_ID = :OLD.SUBJECT_ID;
 END;
 --------------------------------------------------------------------------------
---■■■ 20. 성적 입력 PRC_SCORE_INSERT(개설과정ID,수강신청ID,출결,필기,실기) ■■■--
+--■■■ 20. 성적 입력 PRC_SCORE_INSERT(개설과정ID,수강신청ID,출결,필기,실기) ■■■-- (수정 필요)
 CREATE OR REPLACE PROCEDURE PRC_SCORE_INSERT
 (
-    V_OPEN_SUBJ_ID      IN SCORE.OPEN_SUBJ_ID%TYPE      -- 개설과목코드   
+    V_OPEN_SUBJ_ID      IN SCORE.OPEN_SUBJ_ID%TYPE      -- 개설과목코드 
    ,V_APP_ID            IN SCORE.APP_ID%TYPE            -- 수강신청코드
    ,V_ATTEND_SCORE      IN SCORE.ATTEND_SCORE%TYPE      -- 출결성적
    ,V_WRITE_SCORE       IN SCORE.WRITE_SCORE%TYPE       -- 필기성적
    ,V_PRACTICE_SCORE    IN SCORE.PRACTICE_SCORE%TYPE    -- 실기성적
 )
 IS
-    V_SCORE_ID  SCORE.SCORE_ID%TYPE;                -- 점수 코드
-    V_MID_DROP    NUMBER;                           -- 중도포기  
-    MID_DROP_STU_ERROR EXCEPTION;                   -- 중도포기에러     
+    V_END_DATE          OPEN_SUBJ.END_DATE%TYPE;          -- 개설과목 종료일    
+    V_SCORE_DATE        SCORE.SCORE_DATE%TYPE;            -- 성적입력일    
+    V_SCORE_ID          SCORE.SCORE_ID%TYPE;              -- 점수 코드
+    V_FAPP_ID           SCORE.APP_ID%TYPE;                -- 수강신청코드 중복검사    
+    V_MID_DROP          NUMBER;                           -- 중도포기 
+    
+    MID_DROP_STU_ERROR EXCEPTION;                   -- 중도포기에러  
+    APP_OVERLAP_ERROR EXCEPTION;                    -- 수강신청코드시 중복시 에러 
+    SCORE_DATE_ERROR   EXCEPTION;                  -- 개설과목 진행중에 성적입력X 에러
+    
 BEGIN
+
+    -- ①중복값 입력시 에러발생
+    SELECT NVL((SELECT APP_ID
+                FROM SCORE
+                WHERE APP_ID = V_APP_ID),'0') INTO V_FAPP_ID    -- 중복된 값이 있다면 V_FAPP_ID에 0을 담음
+    FROM DUAL;            
+
+    IF(V_FAPP_ID = V_APP_ID)
+        THEN RAISE APP_OVERLAP_ERROR;
+    END IF;            
+
+    -- ②중도포기한 과목 입력시 에러발생
     SELECT COUNT(*) INTO V_MID_DROP
     FROM DROPOUT
     WHERE APP_ID = V_APP_ID;
     
-    -- 중도포기한 과목을 입력하려고 할 때 에러 발생
     IF (V_MID_DROP> 0)
         THEN RAISE MID_DROP_STU_ERROR;
+    END IF;
+    
+    -- ③과목 진행 중간에 성적 입력 불가 
+    -- 끝나는 날짜보다 이르면 입력 불가
+    SELECT END_DATE INTO V_END_DATE 
+    FROM OPEN_SUBJ
+    WHERE OPEN_SUBJ_ID =  V_OPEN_SUBJ_ID;
+
+    IF (V_END_DATE > SYSDATE)
+        THEN RAISE SCORE_DATE_ERROR;
     END IF;
     
     --SCORE_ID + 시퀀스 번호 표기 
@@ -651,8 +679,17 @@ BEGIN
         WHEN MID_DROP_STU_ERROR 
             THEN RAISE_APPLICATION_ERROR(-20007, '중도포기한 수업입니다.');
                 ROLLBACK;
+        WHEN APP_OVERLAP_ERROR
+            THEN RAISE_APPLICATION_ERROR(-20027, '이미 성적이 등록된 학생입니다');
+                ROLLBACK;
+        WHEN SCORE_DATE_ERROR
+            THEN RAISE_APPLICATION_ERROR(-20028, '성적입력기간이 아닙니다');
+                ROLLBACK;
+
          WHEN OTHERS
             THEN ROLLBACK;
+
+
 END;
 --------------------------------------------------------------------------------
 --■■■ 21. 성적 수정 PRC_SCORE_UPDATE(점수ID, 출결, 필기, 실기) ■■■--
@@ -1104,7 +1141,7 @@ BEGIN
 
     -- INSERT 쿼리문 수행
     INSERT INTO APP(APP_ID, OPEN_COUR_ID, STU_ID) -- APP_DATE는 SYSDATE 디폴트
-    VALUES(('AP' || LPAD(TO_CHAR(APP_SEQ.NEXTVAL), 3, '0')), V_OPEN_COUR_ID, V_STU_ID);
+    VALUES(('AP' || LPAD(TO_CHAR(APP_SEQ.NEXTVAL), 5, '0')), V_OPEN_COUR_ID, V_STU_ID);
     
     EXCEPTION
     WHEN USER_DEFINE_ERROR
@@ -1326,11 +1363,26 @@ END;
 CREATE OR REPLACE PROCEDURE PRC_REASONS_DROPOUT_DELETE
 ( V_REASONS_DROPOUT_ID IN REASONS_DROPOUT.REASONS_DROPOUT_ID%TYPE )
 IS
+    CHECK_REASON_ID REASONS_DROPOUT.REASONS_DROPOUT_ID%TYPE;
+    USER_DEFINE_ERROR EXCEPTION; 
+    
 BEGIN
+    SELECT COUNT(*) INTO CHECK_REASON_ID
+    FROM DROPOUT
+    WHERE REASONS_DROPOUT_ID = V_REASONS_DROPOUT_ID;
+    
+    IF (CHECK_REASON_ID != 0)
+        THEN RAISE USER_DEFINE_ERROR;
+    END IF;
+    
     DELETE
     FROM REASONS_DROPOUT
     WHERE REASONS_DROPOUT_ID = V_REASONS_DROPOUT_ID;
-    
+
+    EXCEPTION
+        WHEN USER_DEFINE_ERROR
+        THEN RAISE_APPLICATION_ERROR(-20029, '중도탈락리스트에 입력된 탈락사유이므로 삭제할 수 없습니다.');
+        ROLLBACK;
     COMMIT;
 END;
 --------------------------------------------------------------------------------
@@ -1353,7 +1405,7 @@ BEGIN
     EXECUTE IMMEDIATE 'ALTER SEQUENCE ' || V_SEQ_NAME || ' INCREMENT BY 1 MINVALUE 0';
 END PRC_RESET_SEQ;
 --------------------------------------------------------------------------------
---■■■ 38. 중도탈락리스트 입력 PRC_DROPOUT_INSERT ■■■--
+--■■■ 38. 중도탈락리스트 입력 PRC_DROPOUT_INSERT ■■■-- 
 CREATE OR REPLACE PROCEDURE PRC_DROPOUT_INSERT
 ( V_APP_ID                  IN DROPOUT.APP_ID%TYPE
 , V_REASONS_DROPOUT_ID      IN DROPOUT.REASONS_DROPOUT_ID%TYPE
@@ -1366,17 +1418,29 @@ IS
     V_END_DATE     OPEN_COUR.END_DATE%TYPE;   -- 과정 종료일 담기
     
     USER_DEFINE_ERROR EXCEPTION;              -- 중도포기일이 과정기간 안에 없으면 오류
+    USER_DEFINE_ERROR2 EXCEPTION;
     
+    CHECK_APP_ID   DROPOUT.APP_ID%TYPE;
 BEGIN
+    SELECT NVL((SELECT APP_ID
+               FROM DROPOUT
+               WHERE APP_ID = V_APP_ID),'0') INTO CHECK_APP_ID
+    FROM DUAL;
+    
+    IF (CHECK_APP_ID != '0')
+        THEN RAISE USER_DEFINE_ERROR2;
+    END IF;
+    
     SELECT START_DATE, END_DATE INTO V_START_DATE, V_END_DATE
     FROM OPEN_COUR
     WHERE OPEN_COUR_ID = (SELECT OPEN_COUR_ID
                           FROM APP
                           WHERE APP_ID = V_APP_ID);
     
-    IF (SYSDATE NOT BETWEEN V_START_DATE AND V_END_DATE)
+    IF (SYSDATE NOT BETWEEN V_START_DATE AND V_END_DATE) 
         THEN RAISE USER_DEFINE_ERROR;
     END IF;
+    
     
     
     INSERT INTO DROPOUT(DROPOUT_ID, APP_ID, REASONS_DROPOUT_ID)
@@ -1386,10 +1450,10 @@ BEGIN
         WHEN USER_DEFINE_ERROR
         THEN RAISE_APPLICATION_ERROR(-20025, '중도포기일이 과정기간이 아닙니다.');
         ROLLBACK;
-        /*
-        WHEN OTHERS
-        THEN ROLLBACK;
-        */
+        WHEN USER_DEFINE_ERROR2
+        THEN RAISE_APPLICATION_ERROR(-20026, '이미 중도포기한 학생입니다.');
+        ROLLBACK;
+
     COMMIT;
 END;
 --------------------------------------------------------------------------------
