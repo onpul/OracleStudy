@@ -612,7 +612,7 @@ BEGIN
     WHERE SUBJECT_ID = :OLD.SUBJECT_ID;
 END;
 --------------------------------------------------------------------------------
---■■■ 20. 성적 입력 PRC_SCORE_INSERT(개설과정ID,수강신청ID,출결,필기,실기) ■■■-- (수정 필요)
+--■■■ 20. 성적 입력 PRC_SCORE_INSERT(개설과정ID,수강신청ID,출결,필기,실기) ■■■--
 CREATE OR REPLACE PROCEDURE PRC_SCORE_INSERT
 (
     V_OPEN_SUBJ_ID      IN SCORE.OPEN_SUBJ_ID%TYPE      -- 개설과목코드 
@@ -622,29 +622,38 @@ CREATE OR REPLACE PROCEDURE PRC_SCORE_INSERT
    ,V_PRACTICE_SCORE    IN SCORE.PRACTICE_SCORE%TYPE    -- 실기성적
 )
 IS
+
     V_END_DATE          OPEN_SUBJ.END_DATE%TYPE;          -- 개설과목 종료일    
     V_SCORE_DATE        SCORE.SCORE_DATE%TYPE;            -- 성적입력일    
     V_SCORE_ID          SCORE.SCORE_ID%TYPE;              -- 점수 코드
-    V_FAPP_ID           SCORE.APP_ID%TYPE;                -- 수강신청코드 중복검사    
+    V_FAPP_ID           SCORE.APP_ID%TYPE;                -- 수강신청코드 중복검사   
+    V_FOP_SUB           SCORE.OPEN_SUBJ_ID%TYPE;          -- 개설과목코드 중복검사
     V_MID_DROP          NUMBER;                           -- 중도포기 
-    
+
+
     MID_DROP_STU_ERROR EXCEPTION;                   -- 중도포기에러  
     APP_OVERLAP_ERROR EXCEPTION;                    -- 수강신청코드시 중복시 에러 
     SCORE_DATE_ERROR   EXCEPTION;                  -- 개설과목 진행중에 성적입력X 에러
+
+    CURSOR CUR_CHECK_APP
+    IS 
+    SELECT APP_ID, OPEN_SUBJ_ID
+    FROM SCORE
+    WHERE APP_ID = V_APP_ID; 
     
 BEGIN
-
-    -- ①중복값 입력시 에러발생
-    SELECT NVL((SELECT APP_ID
-                FROM SCORE
-                WHERE APP_ID = V_APP_ID),'0') INTO V_FAPP_ID    -- 중복된 값이 있다면 V_FAPP_ID에 0을 담음
-    FROM DUAL;            
-
-    IF(V_FAPP_ID = V_APP_ID)
+    
+    OPEN CUR_CHECK_APP;
+        LOOP
+        FETCH CUR_CHECK_APP INTO V_FAPP_ID, V_FOP_SUB;
+        EXIT WHEN CUR_CHECK_APP%NOTFOUND;
+        
+        IF (V_OPEN_SUBJ_ID = V_FOP_SUB AND  V_APP_ID = V_FAPP_ID)
         THEN RAISE APP_OVERLAP_ERROR;
-    END IF;            
-
-    -- ②중도포기한 과목 입력시 에러발생
+        END IF;
+        END LOOP;
+    CLOSE CUR_CHECK_APP;
+    
     SELECT COUNT(*) INTO V_MID_DROP
     FROM DROPOUT
     WHERE APP_ID = V_APP_ID;
@@ -662,7 +671,6 @@ BEGIN
     IF (V_END_DATE > SYSDATE)
         THEN RAISE SCORE_DATE_ERROR;
     END IF;
-    
     --SCORE_ID + 시퀀스 번호 표기 
     V_SCORE_ID := 'S'||TO_CHAR(SYSDATE,'YY');
     
@@ -688,8 +696,6 @@ BEGIN
 
          WHEN OTHERS
             THEN ROLLBACK;
-
-
 END;
 --------------------------------------------------------------------------------
 --■■■ 21. 성적 수정 PRC_SCORE_UPDATE(점수ID, 출결, 필기, 실기) ■■■--
@@ -906,12 +912,15 @@ BEGIN
     END IF;
     
     -- 해당 교재를 이미 사용 중인 과목이 있습니다.
-    SELECT NVL((SELECT BOOK_ID
-               FROM OPEN_SUBJ
-               WHERE BOOK_ID = V_BOOK_ID),'0') INTO CHECK_BOOK_ID
+    
+    
+    
+    SELECT NVL((SELECT COUNT(BOOK_ID)
+    FROM OPEN_SUBJ
+    WHERE BOOK_ID = V_BOOK_ID),'0') INTO CHECK_BOOK_ID
     FROM DUAL;
     
-    IF (CHECK_BOOK_ID = V_BOOK_ID)
+    IF (CHECK_BOOK_ID != 0)
         THEN RAISE USER_DEFINE_ERROR2;
     END IF;
 
@@ -1034,6 +1043,8 @@ IS
     USER_DEFINE_ERROR2 EXCEPTION;
 BEGIN
     
+    
+    
     -- 존재하는 강의실ID인지 확인
     SELECT NVL((SELECT CLASS_ID
                FROM CLASS
@@ -1045,13 +1056,26 @@ BEGIN
     END IF;
     
     
+     -- 해당 교재를 이미 사용 중인 과목이 있습니다
+    
+  
+    
+    
     -- 이미 사용중인 개설과정이 있는지 확인
-    SELECT NVL((SELECT CLASS_ID
+    /*SELECT NVL((SELECT CLASS_ID
                FROM OPEN_COUR
                WHERE CLASS_ID = V_CLASS_ID),'0') INTO CHECK_CLASS_ID
     FROM DUAL;
     
     IF (CHECK_CLASS_ID = V_CLASS_ID)
+        THEN RAISE USER_DEFINE_ERROR2;
+    END IF;*/
+    SELECT NVL((SELECT COUNT(CLASS_ID)
+    FROM OPEN_COUR
+    WHERE CLASS_ID = V_CLASS_ID),'0') INTO CHECK_CLASS_ID
+    FROM DUAL;
+    
+    IF (CHECK_CLASS_ID != 0)
         THEN RAISE USER_DEFINE_ERROR2;
     END IF;
 
