@@ -31,3 +31,5 @@ GRANT CREATE VIEW TO TEAM3; -- 뷰
 --==>> Grant을(를) 성공했습니다.
 GRANT CREATE SEQUENCE TO TEAM3; -- 시퀀스
 --==>> Grant을(를) 성공했습니다.
+GRANT CREATE TRIGGER TO TEAM3; -- 트리거
+--==>> Grant을(를) 성공했습니다.
